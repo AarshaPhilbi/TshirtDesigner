@@ -27,3 +27,9 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+CustomTshirt.db
