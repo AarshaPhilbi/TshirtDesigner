@@ -1,12 +1,23 @@
 package com.tshirt.designApp.ui;
 
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.geom.PageSize;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Image;
+
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -244,24 +255,56 @@ class ToolbarPanel extends JPanel {
     }
 
     private JPanel createExportControls() {
-        JPanel panel = new JPanel(new GridLayout(1, 1));
-        panel.setBackground(new Color(240, 245, 250));
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(new TitledBorder("Export Options"));
+        panel.setBackground(Color.WHITE);
 
-        JButton exportButton = new JButton("Export as PNG");
+        String[] formats = {"PNG (Transparent)", "JPEG (White Background)", "PDF (Document)"};
+        JComboBox<String> formatComboBox = new JComboBox<>(formats);
+        formatComboBox.setMaximumSize(new Dimension(250, 30));
+
+        JButton exportButton = new JButton("Export Design");
         exportButton.setBackground(new Color(40, 167, 69));
         exportButton.setForeground(Color.WHITE);
-        exportButton.setFont(new Font("Arial", Font.BOLD, 16));
+        exportButton.setFont(new Font("Arial", Font.BOLD, 14));
+
         exportButton.addActionListener(e -> {
+            String selectedFormat = (String) formatComboBox.getSelectedItem();
+            String format, description;
+
+            if (selectedFormat.startsWith("PNG")) {
+                format = "png";
+                description = "PNG Images";
+            } else if (selectedFormat.startsWith("JPEG")) {
+                format = "jpg";
+                description = "JPEG Images";
+            } else {
+                format = "pdf";
+                description = "PDF Documents";
+            }
+
             JFileChooser fc = new JFileChooser();
-            fc.setSelectedFile(new File("MyTshirtDesign.png"));
+            fc.setAcceptAllFileFilterUsed(false);
+            fc.addChoosableFileFilter(new FileNameExtensionFilter(description, format));
+            fc.setSelectedFile(new File("MyTshirtDesign." + format));
+
             if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
                 File file = fc.getSelectedFile();
-                if (!file.getName().endsWith(".png")) file = new File(file + ".png");
-                canvas.exportAsPNG(file);
-                JOptionPane.showMessageDialog(this, "Design saved!");
+                if (!file.getName().toLowerCase().endsWith("." + format)) {
+                    file = new File(file.getAbsolutePath() + "." + format);
+                }
+                canvas.exportDesign(file, format);
+                JOptionPane.showMessageDialog(this, "Design saved successfully!");
             }
         });
+
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(new JLabel("File Format:"));
+        panel.add(formatComboBox);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
         panel.add(exportButton);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
         return panel;
     }
 }
@@ -328,17 +371,17 @@ class TshirtCanvasPanel extends JPanel {
     }
 
     private Point scale(Point p) {
-        return new Point((int)(p.x / zoomLevel), (int)(p.y / zoomLevel));
+        return new Point((int) (p.x / zoomLevel), (int) (p.y / zoomLevel));
     }
 
     private int getHandle(Point p, DesignElement el) {
         Rectangle b = el.getBounds();
         int s = 8;
         Rectangle[] handles = {
-                new Rectangle(b.x - s/2, b.y - s/2, s, s),
-                new Rectangle(b.x + b.width - s/2, b.y - s/2, s, s),
-                new Rectangle(b.x - s/2, b.y + b.height - s/2, s, s),
-                new Rectangle(b.x + b.width - s/2, b.y + b.height - s/2, s, s)
+                new Rectangle(b.x - s / 2, b.y - s / 2, s, s),
+                new Rectangle(b.x + b.width - s / 2, b.y - s / 2, s, s),
+                new Rectangle(b.x - s / 2, b.y + b.height - s / 2, s, s),
+                new Rectangle(b.x + b.width - s / 2, b.y + b.height - s / 2, s, s)
         };
         for (int i = 0; i < 4; i++) if (handles[i].contains(p)) return i;
         return -1;
@@ -349,15 +392,23 @@ class TshirtCanvasPanel extends JPanel {
         int dx = p.x - dragStartPoint.x;
         int dy = p.y - dragStartPoint.y;
         switch (handle) {
-            case 0: el.resize(b.x + dx, b.y + dy, b.width - dx, b.height - dy); break;
-            case 1: el.resize(b.x, b.y + dy, b.width + dx, b.height - dy); break;
-            case 2: el.resize(b.x + dx, b.y, b.width - dx, b.height + dy); break;
-            case 3: el.resize(b.x, b.y, b.width + dx, b.height + dy); break;
+            case 0:
+                el.resize(b.x + dx, b.y + dy, b.width - dx, b.height - dy);
+                break;
+            case 1:
+                el.resize(b.x, b.y + dy, b.width + dx, b.height - dy);
+                break;
+            case 2:
+                el.resize(b.x + dx, b.y, b.width - dx, b.height + dy);
+                break;
+            case 3:
+                el.resize(b.x, b.y, b.width + dx, b.height + dy);
+                break;
         }
     }
 
     private void updatePreferredSize() {
-        int size = (int)(800 * zoomLevel);
+        int size = (int) (800 * zoomLevel);
         setPreferredSize(new Dimension(size, size));
         revalidate();
     }
@@ -375,12 +426,32 @@ class TshirtCanvasPanel extends JPanel {
         }
     }
 
-    public String getTshirtStyle() { return tShirtStyle; }
-    public void setTshirtStyle(String s) { tShirtStyle = s; repaint(); }
-    public void setView(boolean f) { isFrontView = f; repaint(); }
-    public Color getTshirtColor() { return tshirtColor; }
-    public void setTshirtColor(Color c) { tshirtColor = c; repaint(); }
-    public double getZoom() { return zoomLevel; }
+    public String getTshirtStyle() {
+        return tShirtStyle;
+    }
+
+    public void setTshirtStyle(String s) {
+        tShirtStyle = s;
+        repaint();
+    }
+
+    public void setView(boolean f) {
+        isFrontView = f;
+        repaint();
+    }
+
+    public Color getTshirtColor() {
+        return tshirtColor;
+    }
+
+    public void setTshirtColor(Color c) {
+        tshirtColor = c;
+        repaint();
+    }
+
+    public double getZoom() {
+        return zoomLevel;
+    }
 
     public void adjustZoom(double d) {
         zoomLevel = Math.max(0.5, Math.min(3.0, zoomLevel + d));
@@ -388,35 +459,71 @@ class TshirtCanvasPanel extends JPanel {
         repaint();
     }
 
-    public void resetZoom() { zoomLevel = 1.0; updatePreferredSize(); repaint(); }
-    public void addTextElement(String t) { elements.add(new TextElement(t, 400, 400)); repaint(); }
-    public void addImageElement(BufferedImage i) { elements.add(new ImageElement(i, 350, 350)); repaint(); }
-    public void deleteSelected() { if (selectedElement != null) { elements.remove(selectedElement); selectedElement = null; repaint(); }}
+    public void resetZoom() {
+        zoomLevel = 1.0;
+        updatePreferredSize();
+        repaint();
+    }
+
+    public void addTextElement(String t) {
+        elements.add(new TextElement(t, 400, 400));
+        repaint();
+    }
+
+    public void addImageElement(BufferedImage i) {
+        elements.add(new ImageElement(i, 350, 350));
+        repaint();
+    }
+
+    public void deleteSelected() {
+        if (selectedElement != null) {
+            elements.remove(selectedElement);
+            selectedElement = null;
+            repaint();
+        }
+    }
 
     public void bringForward() {
         if (selectedElement != null) {
             int i = elements.indexOf(selectedElement);
-            if (i < elements.size() - 1) { elements.remove(i); elements.add(i + 1, selectedElement); repaint(); }
+            if (i < elements.size() - 1) {
+                elements.remove(i);
+                elements.add(i + 1, selectedElement);
+                repaint();
+            }
         }
     }
 
     public void sendBackward() {
         if (selectedElement != null) {
             int i = elements.indexOf(selectedElement);
-            if (i > 0) { elements.remove(i); elements.add(i - 1, selectedElement); repaint(); }
+            if (i > 0) {
+                elements.remove(i);
+                elements.add(i - 1, selectedElement);
+                repaint();
+            }
         }
     }
 
     public void setSelectedTextFont(String f) {
-        if (selectedElement instanceof TextElement) { ((TextElement) selectedElement).setFontName(f); repaint(); }
+        if (selectedElement instanceof TextElement) {
+            ((TextElement) selectedElement).setFontName(f);
+            repaint();
+        }
     }
 
     public void setSelectedTextSize(int s) {
-        if (selectedElement instanceof TextElement) { ((TextElement) selectedElement).setFontSize(s); repaint(); }
+        if (selectedElement instanceof TextElement) {
+            ((TextElement) selectedElement).setFontSize(s);
+            repaint();
+        }
     }
 
     public void setSelectedTextColor(Color c) {
-        if (selectedElement instanceof TextElement) { ((TextElement) selectedElement).setColor(c); repaint(); }
+        if (selectedElement instanceof TextElement) {
+            ((TextElement) selectedElement).setColor(c);
+            repaint();
+        }
     }
 
     protected void paintComponent(Graphics g) {
@@ -442,10 +549,10 @@ class TshirtCanvasPanel extends JPanel {
     private void drawHandles(Graphics2D g, Rectangle b) {
         g.setColor(new Color(0, 120, 215));
         int s = 8;
-        g.fillRect(b.x - s/2, b.y - s/2, s, s);
-        g.fillRect(b.x + b.width - s/2, b.y - s/2, s, s);
-        g.fillRect(b.x - s/2, b.y + b.height - s/2, s, s);
-        g.fillRect(b.x + b.width - s/2, b.y + b.height - s/2, s, s);
+        g.fillRect(b.x - s / 2, b.y - s / 2, s, s);
+        g.fillRect(b.x + b.width - s / 2, b.y - s / 2, s, s);
+        g.fillRect(b.x - s / 2, b.y + b.height - s / 2, s, s);
+        g.fillRect(b.x + b.width - s / 2, b.y + b.height - s / 2, s, s);
     }
 
     private void drawTshirt(Graphics2D g) {
@@ -460,22 +567,15 @@ class TshirtCanvasPanel extends JPanel {
                 return;
             }
 
-            // Create a temporary image to apply the color mask
             BufferedImage tempImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2 = tempImage.createGraphics();
 
-            // Draw the original T-shirt image onto the temp image
             g2.drawImage(img, 0, 0, w, h, null);
-
-            // Use SRC_IN composite rule: This draws the source (the color) only where the destination (the shirt) has opaque pixels.
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_IN, 1.0f));
-
-            // Fill the entire temp image with the chosen color. Due to the composite rule, only the shirt shape will be colored.
             g2.setColor(tshirtColor);
             g2.fillRect(0, 0, w, h);
             g2.dispose();
 
-            // Draw the final, colorized image onto the main canvas.
             g.drawImage(tempImage, x, y, w, h, null);
 
         } else {
@@ -484,19 +584,67 @@ class TshirtCanvasPanel extends JPanel {
         }
     }
 
-    public void exportAsPNG(File file) {
-        BufferedImage img = new BufferedImage(800, 800, BufferedImage.TYPE_INT_ARGB);
+    public void exportDesign(File file, String format) {
+        if (format.equalsIgnoreCase("pdf")) {
+            exportAsPdf(file);
+            return;
+        }
+
+        int imageType = format.equalsIgnoreCase("png") ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB;
+        BufferedImage img = new BufferedImage(800, 800, imageType);
         Graphics2D g = img.createGraphics();
+
+        if (format.equalsIgnoreCase("jpg")) {
+            g.setColor(getBackground());
+            g.fillRect(0, 0, 800, 800);
+        }
+
+        DesignElement temp = selectedElement;
+        selectedElement = null;
+
+        drawTshirt(g);
+        for (DesignElement el : elements) el.draw(g);
+
+        selectedElement = temp;
+        g.dispose();
+
+        try {
+            ImageIO.write(img, format, file);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error saving file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportAsPdf(File file) {
+        // Create an image of the current design first
+        BufferedImage designImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = designImage.createGraphics();
         DesignElement temp = selectedElement;
         selectedElement = null;
         drawTshirt(g);
         for (DesignElement el : elements) el.draw(g);
         selectedElement = temp;
         g.dispose();
-        try {
-            ImageIO.write(img, "PNG", file);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error saving", "Error", JOptionPane.ERROR_MESSAGE);
+
+        // Now, embed this image into a PDF document
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            PdfWriter writer = new PdfWriter(fos);
+            PdfDocument pdf = new PdfDocument(writer);
+            Document document = new Document(pdf, PageSize.A4);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(designImage, "png", baos);
+            byte[] imageBytes = baos.toByteArray();
+
+            Image pdfImage = new Image(ImageDataFactory.create(imageBytes));
+
+            // Scale image to fit on the page while maintaining aspect ratio
+            pdfImage.setAutoScale(true);
+
+            document.add(pdfImage);
+            document.close();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error exporting to PDF: " + e.getMessage(), "PDF Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
@@ -512,9 +660,19 @@ abstract class DesignElement {
     }
 
     public abstract void draw(Graphics2D g);
-    public boolean contains(Point p) { return getBounds().contains(p); }
-    public Rectangle getBounds() { return new Rectangle(x, y, width, height); }
-    public void move(int dx, int dy) { x += dx; y += dy; }
+
+    public boolean contains(Point p) {
+        return getBounds().contains(p);
+    }
+
+    public Rectangle getBounds() {
+        return new Rectangle(x, y, width, height);
+    }
+
+    public void move(int dx, int dy) {
+        x += dx;
+        y += dy;
+    }
 
     public void resize(int nx, int ny, int nw, int nh) {
         if (nw > 10 && nh > 10) {
@@ -537,9 +695,17 @@ class TextElement extends DesignElement {
         this.font = new Font("Arial", Font.BOLD, 24);
     }
 
-    public void setFontName(String n) { font = new Font(n, font.getStyle(), font.getSize()); }
-    public void setFontSize(int s) { font = font.deriveFont((float) s); }
-    public void setColor(Color c) { color = c; }
+    public void setFontName(String n) {
+        font = new Font(n, font.getStyle(), font.getSize());
+    }
+
+    public void setFontSize(int s) {
+        font = font.deriveFont((float) s);
+    }
+
+    public void setColor(Color c) {
+        color = c;
+    }
 
     public void draw(Graphics2D g) {
         g.setFont(font);
@@ -555,7 +721,7 @@ class ImageElement extends DesignElement {
     private BufferedImage image;
 
     public ImageElement(BufferedImage img, int x, int y) {
-        super(x, y, 200, (int)(200.0 / img.getWidth() * img.getHeight()));
+        super(x, y, 200, (int) (200.0 / img.getWidth() * img.getHeight()));
         this.image = img;
     }
 

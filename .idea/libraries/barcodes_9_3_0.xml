@@ -1,0 +1,23 @@
+<component name="libraryTable">
+  <library name="barcodes-9.3.0">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/Downloads/barcodes-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/bouncy-castle-adapter-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/bouncy-castle-connector-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/bouncy-castle-fips-adapter-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/commons-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/forms-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/io-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/kernel-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/layout-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/pdfa-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/pdftest-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/pdfua-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/sign-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/styled-xml-parser-9.3.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/svg-9.3.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
