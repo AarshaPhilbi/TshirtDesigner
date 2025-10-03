@@ -4,6 +4,7 @@ import com.tshirt.designApp.database.AssetLoader;
 import com.tshirt.designApp.database.DatabaseManager;
 import java.util.List;
 import java.util.Map;
+import java.io.File;
 
 /**
  * Test program to demonstrate loading fonts, symbols, and colors
@@ -12,6 +13,7 @@ import java.util.Map;
 public class AssetLoadingTest {
 
     public static void main(String[] args) {
+        debugFilePaths();
         System.out.println("=== T-Shirt Design Asset Loading Demo ===");
 
         // Initialize database
@@ -25,6 +27,7 @@ public class AssetLoadingTest {
 
         System.out.println("\n=== Asset loading demonstration complete! ===");
         System.out.println("Your GUI team can use these methods to populate dropdowns, lists, and galleries.");
+        testImageFiles();
     }
 
     /**
@@ -123,5 +126,48 @@ public class AssetLoadingTest {
         return colors.stream()
                 .map(color -> color.hexCode)
                 .toArray(String[]::new);
+    }
+    public static void testImageFiles() {
+        System.out.println("\n--- Testing Image File Existence ---");
+        List<AssetLoader.Symbol> symbols = AssetLoader.loadSymbols(null);
+
+        int found = 0;
+        int missing = 0;
+
+        for (AssetLoader.Symbol symbol : symbols) {
+            File imageFile = new File(symbol.imagePath);
+            boolean exists = imageFile.exists();
+            System.out.printf("%s: %s (%s)%n",
+                    symbol.name,
+                    exists ? "FOUND" : "MISSING",
+                    symbol.imagePath
+            );
+            if (exists) found++; else missing++;
+        }
+
+        System.out.printf("\nSummary: %d found, %d missing%n", found, missing);
+    }
+    public static void debugFilePaths() {
+        System.out.println("\n--- Debugging File Paths ---");
+        System.out.println("Current working directory: " + System.getProperty("user.dir"));
+
+        // Check if assets folder exists
+        File assetsDir = new File("assets");
+        System.out.println("Assets folder exists: " + assetsDir.exists());
+        System.out.println("Assets absolute path: " + assetsDir.getAbsolutePath());
+
+        // Check a specific file
+        File testFile = new File("assets/symbols/shapes/star.png");
+        System.out.println("Test file exists: " + testFile.exists());
+        System.out.println("Test file absolute path: " + testFile.getAbsolutePath());
+
+        // List what's in assets folder if it exists
+        if (assetsDir.exists()) {
+            File[] contents = assetsDir.listFiles();
+            System.out.println("Contents of assets folder:");
+            for (File f : contents) {
+                System.out.println("  - " + f.getName());
+            }
+        }
     }
 }

@@ -12,6 +12,8 @@ public class SimplifiedDatabaseSeeder {
         seedSymbols();
         seedExtendedColors();
         displayAvailableAssets();
+        fixImagePaths();
+        cleanupDuplicates();
 
         System.out.println("=== Database ready for t-shirt design! ===");
     }
@@ -172,5 +174,42 @@ public class SimplifiedDatabaseSeeder {
         pstmt.setString(1, name);
         pstmt.setString(2, hexCode);
         pstmt.executeUpdate();
+    }
+    public static void fixImagePaths() {
+        // First, reset all paths to remove TshirtDesigner prefix
+        String resetPath = "UPDATE symbols_library SET image_path = REPLACE(image_path, 'TshirtDesigner/', '')";
+
+        // Then add it back once
+        String updatePath = "UPDATE symbols_library SET image_path = 'TshirtDesigner/' || image_path WHERE image_path NOT LIKE 'TshirtDesigner/%'";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            stmt.executeUpdate(resetPath);
+            stmt.executeUpdate(updatePath);
+            System.out.println("Fixed image paths - removed duplicates");
+
+        } catch (SQLException e) {
+            System.err.println("Error fixing paths: " + e.getMessage());
+        }
+    }
+    public static void cleanupDuplicates() {
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            // Delete duplicate fonts, keeping only the first occurrence
+            stmt.executeUpdate("DELETE FROM fonts WHERE id NOT IN (SELECT MIN(id) FROM fonts GROUP BY font_name)");
+
+            // Delete duplicate symbols, keeping only the first occurrence
+            stmt.executeUpdate("DELETE FROM symbols_library WHERE id NOT IN (SELECT MIN(id) FROM symbols_library GROUP BY name, category)");
+
+            // Delete duplicate colors, keeping only the first occurrence
+            stmt.executeUpdate("DELETE FROM tshirt_colors WHERE id NOT IN (SELECT MIN(id) FROM tshirt_colors GROUP BY name, hex_code)");
+
+            System.out.println("Cleaned up duplicate entries");
+
+        } catch (SQLException e) {
+            System.err.println("Error cleaning duplicates: " + e.getMessage());
+        }
     }
 }
