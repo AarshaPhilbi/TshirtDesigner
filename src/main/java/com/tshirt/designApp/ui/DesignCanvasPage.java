@@ -1,28 +1,26 @@
 package com.tshirt.designApp.ui;
 
+import com.tshirt.designApp.Layer;
+import com.tshirt.designApp.DesignAdapter;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.geom.PageSize;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Image;
+import javax.swing.event.ChangeListener;
 
-
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.*;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import javax.imageio.ImageIO;
 
 public class DesignCanvasPage extends JFrame {
     private final TshirtCanvasPanel canvasPanel;
@@ -32,15 +30,13 @@ public class DesignCanvasPage extends JFrame {
         setSize(1400, 900);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout());
 
         canvasPanel = new TshirtCanvasPanel(style);
         JScrollPane scrollPane = new JScrollPane(canvasPanel);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        ToolbarPanel toolbarPanel = new ToolbarPanel(canvasPanel);
-
-        add(toolbarPanel, BorderLayout.WEST);
+        add(new ToolbarPanel(canvasPanel), BorderLayout.WEST);
         add(scrollPane, BorderLayout.CENTER);
     }
 
@@ -59,303 +55,312 @@ class ToolbarPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         setBackground(new Color(240, 245, 250));
 
-        add(createTshirtControls());
+        add(createSection("T-Shirt Options", createTshirtControls()));
         add(Box.createRigidArea(new Dimension(0, 15)));
-        add(createZoomControls());
+        add(createSection("Zoom", createZoomControls()));
         add(Box.createRigidArea(new Dimension(0, 15)));
-        add(createTextControls());
+        add(createSection("Text Tools", createTextControls()));
         add(Box.createRigidArea(new Dimension(0, 15)));
-        add(createImageControls());
+        add(createSection("Image Tools", createImageControls()));
         add(Box.createRigidArea(new Dimension(0, 15)));
-        add(createElementControls());
+        add(createSection("Shape Tools", createShapeControls()));
+        add(Box.createRigidArea(new Dimension(0, 15)));
+        add(createSection("Element Controls", createElementControls()));
         add(Box.createVerticalGlue());
-        add(createExportControls());
+        add(createSection("Export Options", createExportControls()));
+    }
+
+    private JPanel createSection(String title, JPanel content) {
+        content.setBorder(new TitledBorder(title));
+        return content;
     }
 
     private JPanel createTshirtControls() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(new TitledBorder("T-Shirt Options"));
-        panel.setBackground(Color.WHITE);
+    JPanel panel = createStyledPanel();
+    
+    String[] styles = {"Regular", "Cropped", "Oversized"};
+    // Declare as final or use array to work around lambda scope
+    final JComboBox<String> styleCombo = createComboBox(styles, null);
+    styleCombo.addActionListener(e -> 
+        canvas.setTshirtStyle((String) styleCombo.getSelectedItem()));
 
-        JLabel styleLabel = new JLabel("Style:");
-        String[] styles = {"Regular", "Cropped", "Oversized"};
-        JComboBox<String> styleComboBox = new JComboBox<>(styles);
-        styleComboBox.setMaximumSize(new Dimension(250, 30));
-        styleComboBox.addActionListener(e -> canvas.setTshirtStyle((String) styleComboBox.getSelectedItem()));
+    JToggleButton frontBtn = new JToggleButton("Front", true);
+    JToggleButton backBtn = new JToggleButton("Back");
+    ButtonGroup viewGroup = new ButtonGroup();
+    viewGroup.add(frontBtn);
+    viewGroup.add(backBtn);
+    frontBtn.addActionListener(e -> canvas.setView(true));
+    backBtn.addActionListener(e -> canvas.setView(false));
 
-        JToggleButton frontButton = new JToggleButton("Front", true);
-        JToggleButton backButton = new JToggleButton("Back");
-        ButtonGroup viewGroup = new ButtonGroup();
-        viewGroup.add(frontButton);
-        viewGroup.add(backButton);
+    JPanel viewPanel = createButtonPanel(frontBtn, backBtn);
+    
+    JButton colorBtn = createButton("Change T-Shirt Color", e -> {
+        Color newColor = JColorChooser.showDialog(this, "Choose Color", canvas.getTshirtColor());
+        if (newColor != null) canvas.setTshirtColor(newColor);
+    });
 
-        frontButton.addActionListener(e -> canvas.setView(true));
-        backButton.addActionListener(e -> canvas.setView(false));
-
-        JPanel viewPanel = new JPanel(new GridLayout(1, 2, 5, 5));
-        viewPanel.setBackground(Color.WHITE);
-        viewPanel.add(frontButton);
-        viewPanel.add(backButton);
-        viewPanel.setMaximumSize(new Dimension(250, 40));
-
-        JButton colorButton = new JButton("Change T-Shirt Color");
-        colorButton.addActionListener(e -> {
-            Color newColor = JColorChooser.showDialog(this, "Choose Color", canvas.getTshirtColor());
-            if (newColor != null) canvas.setTshirtColor(newColor);
-        });
-
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(styleLabel);
-        panel.add(styleComboBox);
-        panel.add(Box.createRigidArea(new Dimension(0, 15)));
-        panel.add(new JLabel("View:"));
-        panel.add(viewPanel);
-        panel.add(Box.createRigidArea(new Dimension(0, 15)));
-        panel.add(colorButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        return panel;
-    }
+    panel.add(createLabel("Style:"));
+    panel.add(styleCombo);
+    panel.add(Box.createRigidArea(new Dimension(0, 10)));
+    panel.add(createLabel("View:"));
+    panel.add(viewPanel);
+    panel.add(Box.createRigidArea(new Dimension(0, 10)));
+    panel.add(colorBtn);
+    
+    return panel;
+}
 
     private JPanel createZoomControls() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(new TitledBorder("Zoom"));
-        panel.setBackground(Color.WHITE);
-
+        JPanel panel = createStyledPanel();
+        
         JLabel zoomLabel = new JLabel("Zoom: 100%");
         zoomLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 5, 5));
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.setMaximumSize(new Dimension(250, 35));
+        JButton zoomOut = createButton("-", e -> updateZoom(-0.1, zoomLabel));
+        JButton reset = createButton("Reset", e -> resetZoom(zoomLabel));
+        JButton zoomIn = createButton("+", e -> updateZoom(0.1, zoomLabel));
 
-        JButton zoomOutBtn = new JButton("-");
-        JButton resetBtn = new JButton("Reset");
-        JButton zoomInBtn = new JButton("+");
-
-        zoomInBtn.addActionListener(e -> {
-            canvas.adjustZoom(0.1);
-            zoomLabel.setText(String.format("Zoom: %.0f%%", canvas.getZoom() * 100));
-        });
-
-        zoomOutBtn.addActionListener(e -> {
-            canvas.adjustZoom(-0.1);
-            zoomLabel.setText(String.format("Zoom: %.0f%%", canvas.getZoom() * 100));
-        });
-
-        resetBtn.addActionListener(e -> {
-            canvas.resetZoom();
-            zoomLabel.setText("Zoom: 100%");
-        });
-
-        buttonPanel.add(zoomOutBtn);
-        buttonPanel.add(resetBtn);
-        buttonPanel.add(zoomInBtn);
-
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        JPanel btnPanel = createButtonPanel(zoomOut, reset, zoomIn);
+        
         panel.add(zoomLabel);
         panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(buttonPanel);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(btnPanel);
+        
         return panel;
     }
 
     private JPanel createTextControls() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(new TitledBorder("Text Tools"));
-        panel.setBackground(Color.WHITE);
+    JPanel panel = createStyledPanel();
+    
+    JButton addTextBtn = createButton("Add Text", e -> {
+        String text = JOptionPane.showInputDialog(this, "Enter text:");
+        if (text != null && !text.trim().isEmpty()) canvas.addTextElement(text);
+    });
 
-        JButton addTextButton = new JButton("Add Text");
-        addTextButton.addActionListener(e -> {
-            String text = JOptionPane.showInputDialog(this, "Enter text:");
-            if (text != null && !text.trim().isEmpty()) canvas.addTextElement(text);
-        });
+    String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+    // Declare as final for lambda
+    final JComboBox<String> fontCombo = createComboBox(fonts, null);
+    fontCombo.addActionListener(e -> 
+        canvas.setSelectedTextFont((String) fontCombo.getSelectedItem()));
 
-        String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-        JComboBox<String> fontComboBox = new JComboBox<>(fonts);
-        fontComboBox.setMaximumSize(new Dimension(250, 30));
-        fontComboBox.addActionListener(e -> canvas.setSelectedTextFont((String) fontComboBox.getSelectedItem()));
+    // Declare spinner as final for lambda
+    final JSpinner fontSize = createSpinner(24, 8, 120, null);
+    fontSize.addChangeListener(e -> 
+        canvas.setSelectedTextSize((Integer) fontSize.getValue()));
 
-        JSpinner fontSizeSpinner = new JSpinner(new SpinnerNumberModel(24, 8, 120, 1));
-        fontSizeSpinner.setMaximumSize(new Dimension(100, 30));
-        fontSizeSpinner.addChangeListener(e -> canvas.setSelectedTextSize((Integer) fontSizeSpinner.getValue()));
+    JButton colorBtn = createButton("Change Text Color", e -> {
+        Color newColor = JColorChooser.showDialog(this, "Choose Font Color", Color.BLACK);
+        if (newColor != null) canvas.setSelectedTextColor(newColor);
+    });
 
-        JButton fontColorButton = new JButton("Change Text Color");
-        fontColorButton.addActionListener(e -> {
-            Color newColor = JColorChooser.showDialog(this, "Choose Font Color", Color.BLACK);
-            if (newColor != null) canvas.setSelectedTextColor(newColor);
-        });
+    panel.add(addTextBtn);
+    panel.add(Box.createRigidArea(new Dimension(0, 10)));
+    panel.add(createLabel("Font:"));
+    panel.add(fontCombo);
+    panel.add(Box.createRigidArea(new Dimension(0, 5)));
+    panel.add(createLabel("Size:"));
+    panel.add(fontSize);
+    panel.add(Box.createRigidArea(new Dimension(0, 10)));
+    panel.add(colorBtn);
+    
+    return panel;
+}
 
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(addTextButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 15)));
-        panel.add(new JLabel("Font:"));
-        panel.add(fontComboBox);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(new JLabel("Size:"));
-        panel.add(fontSizeSpinner);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(fontColorButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+    private JPanel createImageControls() {
+        JPanel panel = createStyledPanel();
+        panel.add(createButton("Add Image", e -> addImage()));
         return panel;
     }
 
-    private JPanel createImageControls() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(new TitledBorder("Image Tools"));
-        panel.setBackground(Color.WHITE);
-
-        JButton addImageButton = new JButton("Add Image");
-        addImageButton.addActionListener(e -> {
-            JFileChooser fc = new JFileChooser();
-            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                try {
-                    BufferedImage img = ImageIO.read(fc.getSelectedFile());
-                    if (img != null) canvas.addImageElement(img);
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(this, "Error loading image", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
+    private JPanel createShapeControls() {
+        JPanel panel = createStyledPanel();
+        
+        String[] shapes = {"Rectangle", "Circle", "Triangle"};
+        JComboBox<String> shapeCombo = createComboBox(shapes, null);
+        
+        JButton addShapeBtn = createButton("Add Shape", e -> {
+            String shapeType = (String) shapeCombo.getSelectedItem();
+            Color color = JColorChooser.showDialog(this, "Choose Shape Color", Color.RED);
+            if (color != null) canvas.addShapeElement(shapeType.toLowerCase(), color);
         });
 
+        panel.add(createLabel("Shape Type:"));
+        panel.add(shapeCombo);
         panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(addImageButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(addShapeBtn);
+        
         return panel;
     }
 
     private JPanel createElementControls() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(new TitledBorder("Element Controls"));
-        panel.setBackground(Color.WHITE);
-
-        JButton deleteButton = new JButton("Delete Selected");
-        deleteButton.setBackground(new Color(220, 53, 69));
-        deleteButton.setForeground(Color.WHITE);
-        deleteButton.addActionListener(e -> canvas.deleteSelected());
-
-        JButton bringForwardBtn = new JButton("Bring Forward");
-        bringForwardBtn.addActionListener(e -> canvas.bringForward());
-
-        JButton sendBackwardBtn = new JButton("Send Backward");
-        sendBackwardBtn.addActionListener(e -> canvas.sendBackward());
-
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(bringForwardBtn);
+        JPanel panel = createStyledPanel();
+        
+        panel.add(createButton("Bring Forward", e -> canvas.bringForward()));
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
-        panel.add(sendBackwardBtn);
+        panel.add(createButton("Send Backward", e -> canvas.sendBackward()));
         panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(deleteButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(createDangerButton("Delete Selected", e -> canvas.deleteSelected()));
+        
         return panel;
     }
 
     private JPanel createExportControls() {
+        JPanel panel = createStyledPanel();
+        
+        String[] formats = {"PNG (Transparent)", "JPEG (White Background)", "PDF (Document)"};
+        JComboBox<String> formatCombo = createComboBox(formats, null);
+        
+        JButton exportBtn = createButton("Export Design", e -> exportDesign(formatCombo));
+        exportBtn.setBackground(new Color(40, 167, 69));
+        exportBtn.setForeground(Color.WHITE);
+        exportBtn.setFont(new Font("Arial", Font.BOLD, 14));
+
+        panel.add(createLabel("File Format:"));
+        panel.add(formatCombo);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+        panel.add(exportBtn);
+        
+        return panel;
+    }
+
+    // Helper methods
+    private JPanel createStyledPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(new TitledBorder("Export Options"));
         panel.setBackground(Color.WHITE);
-
-        String[] formats = {"PNG (Transparent)", "JPEG (White Background)", "PDF (Document)"};
-        JComboBox<String> formatComboBox = new JComboBox<>(formats);
-        formatComboBox.setMaximumSize(new Dimension(250, 30));
-
-        JButton exportButton = new JButton("Export Design");
-        exportButton.setBackground(new Color(40, 167, 69));
-        exportButton.setForeground(Color.WHITE);
-        exportButton.setFont(new Font("Arial", Font.BOLD, 14));
-
-        exportButton.addActionListener(e -> {
-            String selectedFormat = (String) formatComboBox.getSelectedItem();
-            String format, description;
-
-            if (selectedFormat.startsWith("PNG")) {
-                format = "png";
-                description = "PNG Images";
-            } else if (selectedFormat.startsWith("JPEG")) {
-                format = "jpg";
-                description = "JPEG Images";
-            } else {
-                format = "pdf";
-                description = "PDF Documents";
-            }
-
-            JFileChooser fc = new JFileChooser();
-            fc.setAcceptAllFileFilterUsed(false);
-            fc.addChoosableFileFilter(new FileNameExtensionFilter(description, format));
-            fc.setSelectedFile(new File("MyTshirtDesign." + format));
-
-            if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-                File file = fc.getSelectedFile();
-                if (!file.getName().toLowerCase().endsWith("." + format)) {
-                    file = new File(file.getAbsolutePath() + "." + format);
-                }
-                canvas.exportDesign(file, format);
-                JOptionPane.showMessageDialog(this, "Design saved successfully!");
-            }
-        });
-
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(new JLabel("File Format:"));
-        panel.add(formatComboBox);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(exportButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
         return panel;
+    }
+
+    private JButton createButton(String text, ActionListener action) {
+        JButton btn = new JButton(text);
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btn.setMaximumSize(new Dimension(250, 30));
+        if (action != null) btn.addActionListener(action);
+        return btn;
+    }
+
+    private JButton createDangerButton(String text, ActionListener action) {
+        JButton btn = createButton(text, action);
+        btn.setBackground(new Color(220, 53, 69));
+        btn.setForeground(Color.WHITE);
+        return btn;
+    }
+
+    private JComboBox<String> createComboBox(String[] items, ActionListener action) {
+        JComboBox<String> combo = new JComboBox<>(items);
+        combo.setMaximumSize(new Dimension(250, 30));
+        if (action != null) combo.addActionListener(action);
+        return combo;
+    }
+
+    private JSpinner createSpinner(int value, int min, int max, ChangeListener listener) {
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel(value, min, max, 1));
+        spinner.setMaximumSize(new Dimension(100, 30));
+        if (listener != null) spinner.addChangeListener(listener);
+        return spinner;
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
+    }
+
+    private JPanel createButtonPanel(JComponent... components) {
+        JPanel panel = new JPanel(new GridLayout(1, components.length, 5, 5));
+        panel.setBackground(Color.WHITE);
+        panel.setMaximumSize(new Dimension(250, 35));
+        for (JComponent comp : components) panel.add(comp);
+        return panel;
+    }
+
+    private void updateZoom(double delta, JLabel label) {
+        canvas.adjustZoom(delta);
+        label.setText(String.format("Zoom: %.0f%%", canvas.getZoom() * 100));
+    }
+
+    private void resetZoom(JLabel label) {
+        canvas.resetZoom();
+        label.setText("Zoom: 100%");
+    }
+
+    private void addImage() {
+        JFileChooser fc = new JFileChooser();
+        if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try {
+                BufferedImage img = ImageIO.read(fc.getSelectedFile());
+                if (img != null) canvas.addImageElement(img);
+            } catch (IOException ex) {
+                showError("Error loading image");
+            }
+        }
+    }
+
+    private void exportDesign(JComboBox<String> formatCombo) {
+        String selected = (String) formatCombo.getSelectedItem();
+        String format = selected.startsWith("PNG") ? "png" : 
+                       selected.startsWith("JPEG") ? "jpg" : "pdf";
+        String description = selected.split(" ")[0] + " Files";
+
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new FileNameExtensionFilter(description, format));
+        fc.setSelectedFile(new File("MyTshirtDesign." + format));
+
+        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fc.getSelectedFile();
+            if (!file.getName().toLowerCase().endsWith("." + format)) {
+                file = new File(file.getAbsolutePath() + "." + format);
+            }
+            canvas.exportDesign(file, format);
+            JOptionPane.showMessageDialog(this, "Design saved successfully!");
+        }
+    }
+
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
 
 class TshirtCanvasPanel extends JPanel {
-    private String tShirtStyle;
-    private Color tshirtColor = Color.WHITE;
+    private String tShirtStyle = "Regular";
+    private Color tshirtColor = Color.WHITE; // Changed from WHITE to be visible
     private boolean isFrontView = true;
-    private final List<DesignElement> elements = new ArrayList<>();
-    private DesignElement selectedElement = null;
+    private double zoomLevel = 1.0;
+    
+    private final DesignAdapter designAdapter = new DesignAdapter();
+    private final Map<String, BufferedImage> tshirtImages = new HashMap<>();
+    private Layer selectedLayer = null;
     private Point dragStartPoint;
     private int activeHandle = -1;
-    private double zoomLevel = 1.0;
-    private final Map<String, BufferedImage> tshirtImages = new HashMap<>();
 
     public TshirtCanvasPanel(String style) {
         this.tShirtStyle = style;
         loadTshirtImages();
         setBackground(new Color(220, 220, 225));
+        setupMouseListeners();
         updatePreferredSize();
+    }
 
+    private void setupMouseListeners() {
         MouseAdapter adapter = new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 Point p = scale(e.getPoint());
-                if (selectedElement != null) {
-                    activeHandle = getHandle(p, selectedElement);
-                    if (activeHandle >= 0) {
-                        dragStartPoint = p;
-                        return;
-                    }
-                }
-                selectedElement = null;
-                for (int i = elements.size() - 1; i >= 0; i--) {
-                    if (elements.get(i).contains(p)) {
-                        selectedElement = elements.get(i);
-                        dragStartPoint = p;
-                        elements.remove(i);
-                        elements.add(selectedElement);
-                        break;
-                    }
+                selectedLayer = designAdapter.selectElementAt(p);
+                if (selectedLayer != null) {
+                    activeHandle = getHandle(p, selectedLayer);
+                    dragStartPoint = (activeHandle >= 0) ? p : p;
                 }
                 repaint();
             }
 
             public void mouseDragged(MouseEvent e) {
                 Point p = scale(e.getPoint());
-                if (selectedElement != null && dragStartPoint != null) {
+                if (selectedLayer != null && dragStartPoint != null) {
                     if (activeHandle >= 0) {
-                        resizeElement(selectedElement, activeHandle, p);
+                        resizeElement(selectedLayer, activeHandle, p);
                     } else {
-                        selectedElement.move(p.x - dragStartPoint.x, p.y - dragStartPoint.y);
+                        int dx = p.x - dragStartPoint.x, dy = p.y - dragStartPoint.y;
+                        selectedLayer.moveContent(dx, dy);
                     }
                     dragStartPoint = p;
                     repaint();
@@ -370,50 +375,173 @@ class TshirtCanvasPanel extends JPanel {
         addMouseMotionListener(adapter);
     }
 
-    private Point scale(Point p) {
-        return new Point((int) (p.x / zoomLevel), (int) (p.y / zoomLevel));
+    // Core functionality methods
+    public void addTextElement(String text) { designAdapter.addTextElement(text, 400, 400); repaint(); }
+    public void addImageElement(BufferedImage image) { designAdapter.addImageElement(image, 350, 350); repaint(); }
+    public void addShapeElement(String type, Color color) { designAdapter.addShapeElement(type, 300, 300, 100, 100, color); repaint(); }
+    public void deleteSelected() { if (selectedLayer != null) { designAdapter.deleteLayer(selectedLayer); selectedLayer = null; repaint(); } }
+    public void bringForward() { if (selectedLayer != null) { designAdapter.bringForward(selectedLayer); repaint(); } }
+    public void sendBackward() { if (selectedLayer != null) { designAdapter.sendBackward(selectedLayer); repaint(); } }
+
+    // Getters and setters
+    public String getTshirtStyle() { return tShirtStyle; }
+    public void setTshirtStyle(String style) { tShirtStyle = style; repaint(); }
+    public void setView(boolean front) { isFrontView = front; repaint(); }
+    public Color getTshirtColor() { return tshirtColor; }
+    public void setTshirtColor(Color color) { tshirtColor = color; repaint(); }
+    public double getZoom() { return zoomLevel; }
+
+    public void adjustZoom(double delta) {
+        zoomLevel = Math.max(0.5, Math.min(3.0, zoomLevel + delta));
+        updatePreferredSize();
+        repaint();
     }
 
-    private int getHandle(Point p, DesignElement el) {
-        Rectangle b = el.getBounds();
-        int s = 8;
-        Rectangle[] handles = {
-                new Rectangle(b.x - s / 2, b.y - s / 2, s, s),
-                new Rectangle(b.x + b.width - s / 2, b.y - s / 2, s, s),
-                new Rectangle(b.x - s / 2, b.y + b.height - s / 2, s, s),
-                new Rectangle(b.x + b.width - s / 2, b.y + b.height - s / 2, s, s)
-        };
-        for (int i = 0; i < 4; i++) if (handles[i].contains(p)) return i;
-        return -1;
+    public void resetZoom() {
+        zoomLevel = 1.0;
+        updatePreferredSize();
+        repaint();
     }
 
-    private void resizeElement(DesignElement el, int handle, Point p) {
-        Rectangle b = el.getBounds();
-        int dx = p.x - dragStartPoint.x;
-        int dy = p.y - dragStartPoint.y;
-        switch (handle) {
-            case 0:
-                el.resize(b.x + dx, b.y + dy, b.width - dx, b.height - dy);
-                break;
-            case 1:
-                el.resize(b.x, b.y + dy, b.width + dx, b.height - dy);
-                break;
-            case 2:
-                el.resize(b.x + dx, b.y, b.width - dx, b.height + dy);
-                break;
-            case 3:
-                el.resize(b.x, b.y, b.width + dx, b.height + dy);
-                break;
+    public void setSelectedTextFont(String font) {
+        if (selectedLayer != null && selectedLayer.getContent() instanceof com.tshirt.designApp.TextElement) {
+            ((com.tshirt.designApp.TextElement) selectedLayer.getContent()).setFontFamily(font);
+            repaint();
         }
     }
 
-    private void updatePreferredSize() {
-        int size = (int) (800 * zoomLevel);
-        setPreferredSize(new Dimension(size, size));
-        revalidate();
+    public void setSelectedTextSize(int size) {
+        if (selectedLayer != null && selectedLayer.getContent() instanceof com.tshirt.designApp.TextElement) {
+            ((com.tshirt.designApp.TextElement) selectedLayer.getContent()).setFontSize(size);
+            repaint();
+        }
     }
 
-    private void loadTshirtImages() {
+    public void setSelectedTextColor(Color color) {
+        if (selectedLayer != null && selectedLayer.getContent() instanceof com.tshirt.designApp.TextElement) {
+            ((com.tshirt.designApp.TextElement) selectedLayer.getContent()).setTextColor(color);
+            repaint();
+        }
+    }
+
+    // Drawing and rendering
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.scale(zoomLevel, zoomLevel);
+
+        drawTshirt(g2d);
+        
+        if (isFrontView) {
+            designAdapter.getLayersForDrawing().forEach(layer -> {
+                layer.draw(g2d);
+                if (layer == selectedLayer) drawSelection(g2d, layer);
+            });
+        }
+    }
+
+    private void drawTshirt(Graphics2D g) {
+        String key = tShirtStyle + (isFrontView ? "_Front" : "_Back");
+        BufferedImage img = tshirtImages.get(key);
+        
+        if (img != null) {
+            int w = 400, h = 500, x = 200, y = 150;
+            if (tshirtColor.equals(Color.WHITE)) {
+                g.drawImage(img, x, y, w, h, null);
+            } else {
+                BufferedImage temp = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g2 = temp.createGraphics();
+                g2.drawImage(img, 0, 0, w, h, null);
+                g2.setComposite(AlphaComposite.SrcIn);
+                g2.setColor(tshirtColor);
+                g2.fillRect(0, 0, w, h);
+                g2.dispose();
+                g.drawImage(temp, x, y, w, h, null);
+            }
+        } else {
+            g.setColor(tshirtColor);
+            g.fillRect(250, 150, 300, 400);
+        }
+    }
+
+    private void drawSelection(Graphics2D g, Layer layer) {
+        Rectangle bounds = layer.getContent().getBoundsAsRectangle();
+        g.setColor(new Color(0, 120, 215));
+        g.setStroke(new BasicStroke(2));
+        g.draw(bounds);
+        drawHandles(g, bounds);
+    }
+
+    private void drawHandles(Graphics2D g, Rectangle b) {
+        g.setColor(new Color(0, 120, 215));
+        int s = 8;
+        int[][] handlePositions = {{b.x, b.y}, {b.x + b.width, b.y}, {b.x, b.y + b.height}, {b.x + b.width, b.y + b.height}};
+        for (int[] pos : handlePositions) {
+            g.fillRect(pos[0] - s/2, pos[1] - s/2, s, s);
+        }
+    }
+
+    // Export functionality
+    public void exportDesign(File file, String format) {
+        if (format.equalsIgnoreCase("pdf")) {
+            exportAsPdf(file);
+        } else {
+            exportAsImage(file, format);
+        }
+    }
+
+    private void exportAsImage(File file, String format) {
+        int imageType = format.equals("png") ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB;
+        BufferedImage img = new BufferedImage(800, 800, imageType);
+        Graphics2D g = img.createGraphics();
+
+        if (format.equals("jpg")) {
+            g.setColor(Color.WHITE);
+            g.fillRect(0, 0, 800, 800);
+        }
+
+        drawTshirt(g);
+        designAdapter.getLayersForDrawing().forEach(layer -> layer.draw(g));
+        g.dispose();
+
+        try {
+            ImageIO.write(img, format, file);
+        } catch (IOException e) {
+            showError("Error saving file: " + e.getMessage());
+        }
+    }
+
+    private void exportAsPdf(File file) {
+        BufferedImage designImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = designImage.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        Layer temp = selectedLayer;
+        selectedLayer = null;
+        drawTshirt(g);
+        designAdapter.getLayersForDrawing().forEach(layer -> { if (layer.isVisible()) layer.draw(g); });
+        selectedLayer = temp;
+        g.dispose();
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            PdfDocument pdf = new PdfDocument(new PdfWriter(fos));
+            Document document = new Document(pdf, PageSize.A4);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(designImage, "png", baos);
+            Image pdfImage = new Image(ImageDataFactory.create(baos.toByteArray()));
+            pdfImage.setAutoScale(true);
+            
+            document.add(pdfImage);
+            document.close();
+        } catch (Exception e) {
+            showError("Error exporting to PDF: " + e.getMessage());
+        }
+    }
+
+    // Utility methods
+     private void loadTshirtImages() {
         try {
             tshirtImages.put("Cropped_Front", ImageIO.read(getClass().getResource("/images/cropFront.png")));
             tshirtImages.put("Regular_Front", ImageIO.read(getClass().getResource("/images/regularFront.png")));
@@ -426,307 +554,36 @@ class TshirtCanvasPanel extends JPanel {
         }
     }
 
-    public String getTshirtStyle() {
-        return tShirtStyle;
+    private void updatePreferredSize() {
+        int size = (int) (800 * zoomLevel);
+        setPreferredSize(new Dimension(size, size));
+        revalidate();
     }
 
-    public void setTshirtStyle(String s) {
-        tShirtStyle = s;
-        repaint();
+    private Point scale(Point p) {
+        return new Point((int)(p.x / zoomLevel), (int)(p.y / zoomLevel));
     }
 
-    public void setView(boolean f) {
-        isFrontView = f;
-        repaint();
-    }
-
-    public Color getTshirtColor() {
-        return tshirtColor;
-    }
-
-    public void setTshirtColor(Color c) {
-        tshirtColor = c;
-        repaint();
-    }
-
-    public double getZoom() {
-        return zoomLevel;
-    }
-
-    public void adjustZoom(double d) {
-        zoomLevel = Math.max(0.5, Math.min(3.0, zoomLevel + d));
-        updatePreferredSize();
-        repaint();
-    }
-
-    public void resetZoom() {
-        zoomLevel = 1.0;
-        updatePreferredSize();
-        repaint();
-    }
-
-    public void addTextElement(String t) {
-        elements.add(new TextElement(t, 400, 400));
-        repaint();
-    }
-
-    public void addImageElement(BufferedImage i) {
-        elements.add(new ImageElement(i, 350, 350));
-        repaint();
-    }
-
-    public void deleteSelected() {
-        if (selectedElement != null) {
-            elements.remove(selectedElement);
-            selectedElement = null;
-            repaint();
-        }
-    }
-
-    public void bringForward() {
-        if (selectedElement != null) {
-            int i = elements.indexOf(selectedElement);
-            if (i < elements.size() - 1) {
-                elements.remove(i);
-                elements.add(i + 1, selectedElement);
-                repaint();
-            }
-        }
-    }
-
-    public void sendBackward() {
-        if (selectedElement != null) {
-            int i = elements.indexOf(selectedElement);
-            if (i > 0) {
-                elements.remove(i);
-                elements.add(i - 1, selectedElement);
-                repaint();
-            }
-        }
-    }
-
-    public void setSelectedTextFont(String f) {
-        if (selectedElement instanceof TextElement) {
-            ((TextElement) selectedElement).setFontName(f);
-            repaint();
-        }
-    }
-
-    public void setSelectedTextSize(int s) {
-        if (selectedElement instanceof TextElement) {
-            ((TextElement) selectedElement).setFontSize(s);
-            repaint();
-        }
-    }
-
-    public void setSelectedTextColor(Color c) {
-        if (selectedElement instanceof TextElement) {
-            ((TextElement) selectedElement).setColor(c);
-            repaint();
-        }
-    }
-
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.scale(zoomLevel, zoomLevel);
-
-        drawTshirt(g2d);
-        if (isFrontView) {
-            for (DesignElement el : elements) {
-                el.draw(g2d);
-                if (el == selectedElement) {
-                    g2d.setColor(new Color(0, 120, 215));
-                    g2d.setStroke(new BasicStroke(2));
-                    g2d.draw(el.getBounds());
-                    drawHandles(g2d, el.getBounds());
-                }
-            }
-        }
-    }
-
-    private void drawHandles(Graphics2D g, Rectangle b) {
-        g.setColor(new Color(0, 120, 215));
+    private int getHandle(Point p, Layer layer) {
+        Rectangle b = layer.getContent().getBoundsAsRectangle();
         int s = 8;
-        g.fillRect(b.x - s / 2, b.y - s / 2, s, s);
-        g.fillRect(b.x + b.width - s / 2, b.y - s / 2, s, s);
-        g.fillRect(b.x - s / 2, b.y + b.height - s / 2, s, s);
-        g.fillRect(b.x + b.width - s / 2, b.y + b.height - s / 2, s, s);
+        Rectangle[] handles = {
+            new Rectangle(b.x - s/2, b.y - s/2, s, s), new Rectangle(b.x + b.width - s/2, b.y - s/2, s, s),
+            new Rectangle(b.x - s/2, b.y + b.height - s/2, s, s), new Rectangle(b.x + b.width - s/2, b.y + b.height - s/2, s, s)
+        };
+        for (int i = 0; i < 4; i++) if (handles[i].contains(p)) return i;
+        return -1;
     }
 
-    private void drawTshirt(Graphics2D g) {
-        String key = tShirtStyle + (isFrontView ? "_Front" : "_Back");
-        BufferedImage img = tshirtImages.get(key);
-        if (img != null) {
-            int w = 400, h = 500;
-            int x = 200, y = 150;
-
-            if (tshirtColor.equals(Color.WHITE)) {
-                g.drawImage(img, x, y, w, h, null);
-                return;
-            }
-
-            BufferedImage tempImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2 = tempImage.createGraphics();
-
-            g2.drawImage(img, 0, 0, w, h, null);
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_IN, 1.0f));
-            g2.setColor(tshirtColor);
-            g2.fillRect(0, 0, w, h);
-            g2.dispose();
-
-            g.drawImage(tempImage, x, y, w, h, null);
-
-        } else {
-            g.setColor(tshirtColor);
-            g.fillRect(250, 150, 300, 400); // Fallback rectangle
-        }
+    private void resizeElement(Layer layer, int handle, Point p) {
+        Rectangle b = layer.getContent().getBoundsAsRectangle();
+        int dx = p.x - dragStartPoint.x, dy = p.y - dragStartPoint.y;
+        int[][] adjustments = {{dx, dy, -dx, -dy}, {0, dy, dx, -dy}, {dx, 0, -dx, dy}, {0, 0, dx, dy}};
+        int[] adj = adjustments[handle];
+        layer.resizeContent(b.x + adj[0], b.y + adj[1], b.width + adj[2], b.height + adj[3]);
     }
 
-    public void exportDesign(File file, String format) {
-        if (format.equalsIgnoreCase("pdf")) {
-            exportAsPdf(file);
-            return;
-        }
-
-        int imageType = format.equalsIgnoreCase("png") ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB;
-        BufferedImage img = new BufferedImage(800, 800, imageType);
-        Graphics2D g = img.createGraphics();
-
-        if (format.equalsIgnoreCase("jpg")) {
-            g.setColor(getBackground());
-            g.fillRect(0, 0, 800, 800);
-        }
-
-        DesignElement temp = selectedElement;
-        selectedElement = null;
-
-        drawTshirt(g);
-        for (DesignElement el : elements) el.draw(g);
-
-        selectedElement = temp;
-        g.dispose();
-
-        try {
-            ImageIO.write(img, format, file);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Error saving file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void exportAsPdf(File file) {
-        // Create an image of the current design first
-        BufferedImage designImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = designImage.createGraphics();
-        DesignElement temp = selectedElement;
-        selectedElement = null;
-        drawTshirt(g);
-        for (DesignElement el : elements) el.draw(g);
-        selectedElement = temp;
-        g.dispose();
-
-        // Now, embed this image into a PDF document
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            PdfWriter writer = new PdfWriter(fos);
-            PdfDocument pdf = new PdfDocument(writer);
-            Document document = new Document(pdf, PageSize.A4);
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(designImage, "png", baos);
-            byte[] imageBytes = baos.toByteArray();
-
-            Image pdfImage = new Image(ImageDataFactory.create(imageBytes));
-
-            // Scale image to fit on the page while maintaining aspect ratio
-            pdfImage.setAutoScale(true);
-
-            document.add(pdfImage);
-            document.close();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error exporting to PDF: " + e.getMessage(), "PDF Error", JOptionPane.ERROR_MESSAGE);
-        }
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
-
-abstract class DesignElement {
-    protected int x, y, width, height;
-
-    public DesignElement(int x, int y, int w, int h) {
-        this.x = x;
-        this.y = y;
-        this.width = Math.max(10, w);
-        this.height = Math.max(10, h);
-    }
-
-    public abstract void draw(Graphics2D g);
-
-    public boolean contains(Point p) {
-        return getBounds().contains(p);
-    }
-
-    public Rectangle getBounds() {
-        return new Rectangle(x, y, width, height);
-    }
-
-    public void move(int dx, int dy) {
-        x += dx;
-        y += dy;
-    }
-
-    public void resize(int nx, int ny, int nw, int nh) {
-        if (nw > 10 && nh > 10) {
-            x = nx;
-            y = ny;
-            width = nw;
-            height = nh;
-        }
-    }
-}
-
-class TextElement extends DesignElement {
-    private String text;
-    private Font font;
-    private Color color = Color.BLACK;
-
-    public TextElement(String t, int x, int y) {
-        super(x, y, 100, 30);
-        this.text = t;
-        this.font = new Font("Arial", Font.BOLD, 24);
-    }
-
-    public void setFontName(String n) {
-        font = new Font(n, font.getStyle(), font.getSize());
-    }
-
-    public void setFontSize(int s) {
-        font = font.deriveFont((float) s);
-    }
-
-    public void setColor(Color c) {
-        color = c;
-    }
-
-    public void draw(Graphics2D g) {
-        g.setFont(font);
-        g.setColor(color);
-        FontMetrics fm = g.getFontMetrics();
-        width = fm.stringWidth(text);
-        height = fm.getHeight();
-        g.drawString(text, x, y + fm.getAscent());
-    }
-}
-
-class ImageElement extends DesignElement {
-    private BufferedImage image;
-
-    public ImageElement(BufferedImage img, int x, int y) {
-        super(x, y, 200, (int) (200.0 / img.getWidth() * img.getHeight()));
-        this.image = img;
-    }
-
-    public void draw(Graphics2D g) {
-        g.drawImage(image, x, y, width, height, null);
-    }
-}
-
