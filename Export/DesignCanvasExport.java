@@ -3,7 +3,6 @@ package com.tshirt.designApp.ui;
 import com.tshirt.designApp.*;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
@@ -45,7 +44,6 @@ public class DesignCanvasExport extends JFrame {
         setVisible(true);
     }
 
-    // Inner panel to render the design
     private class CanvasPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
@@ -77,7 +75,8 @@ public class DesignCanvasExport extends JFrame {
                     TextElement t = (TextElement) content;
                     g2d.setColor(t.getFillColor());
                     g2d.setFont(new Font(t.getFontFamily(), Font.PLAIN, t.getFontSize()));
-                    g2d.drawString(t.getText(), (int) t.getPosition().getX(), (int) t.getPosition().getY() + t.getFontSize());
+                    g2d.drawString(t.getText(), (int) t.getPosition().getX(),
+                            (int) t.getPosition().getY() + t.getFontSize());
                 } else if (content instanceof ImageElement) {
                     ImageElement img = (ImageElement) content;
                     try {
@@ -118,19 +117,8 @@ public class DesignCanvasExport extends JFrame {
         }
     }
 
-    // Test main
     public static void main(String[] args) {
-        // Sample design
-        Design myDesign = new Design(600, 400);
-        Shape rect = new Shape(50, 50, 200, 100, "rectangle");
-        rect.setFillColor(Color.RED);
-        TextElement text = new TextElement(100, 200, "Hello T-Shirt!");
-        text.setFillColor(Color.BLUE);
-        text.setFontSize(24);
-
-        myDesign.addLayer(new Layer(rect, "Rectangle Layer"));
-        myDesign.addLayer(new Layer(text, "Text Layer"));
-
-        SwingUtilities.invokeLater(() -> new DesignCanvasExport(myDesign));
+        Design emptyDesign = new Design(600, 400);
+        SwingUtilities.invokeLater(() -> new DesignCanvasExport(emptyDesign));
     }
 }
