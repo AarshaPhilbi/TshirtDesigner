@@ -210,11 +210,22 @@ class ToolbarPanel extends JPanel {
     private JPanel createExportControls() {
     JPanel panel = createStyledPanel();
     
-   // If you want to keep the format selection, just change the button action:
     JButton exportBtn = createButton("Export Design", e -> {
-    Design coreDesign = canvas.getDesignAdapter().getCoreDesign();
-    new com.tshirt.designApp.Export.DesignCanvasExport(coreDesign).setVisible(true);
-});
+        Design coreDesign = canvas.getDesignAdapter().getCoreDesign();
+        Color tshirtColor = canvas.getTshirtColor();
+        String tshirtStyle = canvas.getTshirtStyle();
+        boolean isFrontView = true; // Use true for front view
+        
+        // UPDATED CONSTRUCTOR CALL:
+        DesignCanvasExport exportWindow = new DesignCanvasExport(
+            coreDesign, 
+            tshirtColor, 
+            tshirtStyle, 
+            isFrontView
+        );
+        exportWindow.setVisible(true);
+    });
+    
     exportBtn.setBackground(new Color(40, 167, 69));
     exportBtn.setForeground(Color.WHITE);
     exportBtn.setFont(new Font("Arial", Font.BOLD, 14));
@@ -228,9 +239,18 @@ class ToolbarPanel extends JPanel {
 
 private void openExportWindow() {
     Design coreDesign = canvas.getDesignAdapter().getCoreDesign();
+    Color tshirtColor = canvas.getTshirtColor();
+    String tshirtStyle = canvas.getTshirtStyle();
+    boolean isFrontView = true; // or get from canvas if available
+    
     SwingUtilities.invokeLater(() -> {
         com.tshirt.designApp.Export.DesignCanvasExport exportWindow = 
-            new com.tshirt.designApp.Export.DesignCanvasExport(coreDesign);
+            new com.tshirt.designApp.Export.DesignCanvasExport(
+                coreDesign, 
+                tshirtColor, 
+                tshirtStyle, 
+                isFrontView
+            );
         exportWindow.setVisible(true);
     });
 }
