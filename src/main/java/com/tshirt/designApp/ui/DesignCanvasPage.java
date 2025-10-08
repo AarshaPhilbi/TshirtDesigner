@@ -1,6 +1,7 @@
 package com.tshirt.designApp.ui;
 
 import com.tshirt.designApp.Layer;
+import com.tshirt.designApp.Design;
 import com.tshirt.designApp.DesignAdapter;
 import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.geom.PageSize;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import javax.imageio.ImageIO;
+import com.tshirt.designApp.Export.DesignCanvasExport;
 
 public class DesignCanvasPage extends JFrame {
     private final TshirtCanvasPanel canvasPanel;
@@ -204,24 +206,54 @@ class ToolbarPanel extends JPanel {
         return panel;
     }
 
+    
     private JPanel createExportControls() {
-        JPanel panel = createStyledPanel();
+    JPanel panel = createStyledPanel();
+    
+    JButton exportBtn = createButton("Export Design", e -> {
+        Design coreDesign = canvas.getDesignAdapter().getCoreDesign();
+        Color tshirtColor = canvas.getTshirtColor();
+        String tshirtStyle = canvas.getTshirtStyle();
+        boolean isFrontView = true; // Use true for front view
         
-        String[] formats = {"PNG (Transparent)", "JPEG (White Background)", "PDF (Document)"};
-        JComboBox<String> formatCombo = createComboBox(formats, null);
-        
-        JButton exportBtn = createButton("Export Design", e -> exportDesign(formatCombo));
-        exportBtn.setBackground(new Color(40, 167, 69));
-        exportBtn.setForeground(Color.WHITE);
-        exportBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        // UPDATED CONSTRUCTOR CALL:
+        DesignCanvasExport exportWindow = new DesignCanvasExport(
+            coreDesign, 
+            tshirtColor, 
+            tshirtStyle, 
+            isFrontView
+        );
+        exportWindow.setVisible(true);
+    });
+    
+    exportBtn.setBackground(new Color(40, 167, 69));
+    exportBtn.setForeground(Color.WHITE);
+    exportBtn.setFont(new Font("Arial", Font.BOLD, 14));
 
-        panel.add(createLabel("File Format:"));
-        panel.add(formatCombo);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(exportBtn);
-        
-        return panel;
-    }
+    panel.add(exportBtn);
+    panel.add(Box.createRigidArea(new Dimension(0, 5)));
+    panel.add(new JLabel("<html><center>Opens separate window<br>for PNG/JPEG export</center></html>"));
+    
+    return panel;
+}
+
+private void openExportWindow() {
+    Design coreDesign = canvas.getDesignAdapter().getCoreDesign();
+    Color tshirtColor = canvas.getTshirtColor();
+    String tshirtStyle = canvas.getTshirtStyle();
+    boolean isFrontView = true; // or get from canvas if available
+    
+    SwingUtilities.invokeLater(() -> {
+        com.tshirt.designApp.Export.DesignCanvasExport exportWindow = 
+            new com.tshirt.designApp.Export.DesignCanvasExport(
+                coreDesign, 
+                tshirtColor, 
+                tshirtStyle, 
+                isFrontView
+            );
+        exportWindow.setVisible(true);
+    });
+}
 
     // Helper methods
     private JPanel createStyledPanel() {
@@ -296,25 +328,25 @@ class ToolbarPanel extends JPanel {
         }
     }
 
-    private void exportDesign(JComboBox<String> formatCombo) {
-        String selected = (String) formatCombo.getSelectedItem();
-        String format = selected.startsWith("PNG") ? "png" : 
-                       selected.startsWith("JPEG") ? "jpg" : "pdf";
-        String description = selected.split(" ")[0] + " Files";
+    // private void exportDesign(JComboBox<String> formatCombo) {
+    //     String selected = (String) formatCombo.getSelectedItem();
+    //     String format = selected.startsWith("PNG") ? "png" : 
+    //                    selected.startsWith("JPEG") ? "jpg" : "pdf";
+    //     String description = selected.split(" ")[0] + " Files";
 
-        JFileChooser fc = new JFileChooser();
-        fc.setFileFilter(new FileNameExtensionFilter(description, format));
-        fc.setSelectedFile(new File("MyTshirtDesign." + format));
+    //     JFileChooser fc = new JFileChooser();
+    //     fc.setFileFilter(new FileNameExtensionFilter(description, format));
+    //     fc.setSelectedFile(new File("MyTshirtDesign." + format));
 
-        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = fc.getSelectedFile();
-            if (!file.getName().toLowerCase().endsWith("." + format)) {
-                file = new File(file.getAbsolutePath() + "." + format);
-            }
-            canvas.exportDesign(file, format);
-            JOptionPane.showMessageDialog(this, "Design saved successfully!");
-        }
-    }
+    //     if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+    //         File file = fc.getSelectedFile();
+    //         if (!file.getName().toLowerCase().endsWith("." + format)) {
+    //             file = new File(file.getAbsolutePath() + "." + format);
+    //         }
+    //         canvas.exportDesign(file, format);
+    //         JOptionPane.showMessageDialog(this, "Design saved successfully!");
+    //     }
+    // }
 
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
@@ -328,6 +360,7 @@ class TshirtCanvasPanel extends JPanel {
     private double zoomLevel = 1.0;
     
     private final DesignAdapter designAdapter = new DesignAdapter();
+    
     private final Map<String, BufferedImage> tshirtImages = new HashMap<>();
     private Layer selectedLayer = null;
     private Point dragStartPoint;
@@ -384,6 +417,9 @@ class TshirtCanvasPanel extends JPanel {
     public void sendBackward() { if (selectedLayer != null) { designAdapter.sendBackward(selectedLayer); repaint(); } }
 
     // Getters and setters
+    public DesignAdapter getDesignAdapter() {
+    return designAdapter;
+}
     public String getTshirtStyle() { return tShirtStyle; }
     public void setTshirtStyle(String style) { tShirtStyle = style; repaint(); }
     public void setView(boolean front) { isFrontView = front; repaint(); }
@@ -481,64 +517,69 @@ class TshirtCanvasPanel extends JPanel {
             g.fillRect(pos[0] - s/2, pos[1] - s/2, s, s);
         }
     }
+    //commented because anagha's export function is doing the work
 
     // Export functionality
-    public void exportDesign(File file, String format) {
-        if (format.equalsIgnoreCase("pdf")) {
-            exportAsPdf(file);
-        } else {
-            exportAsImage(file, format);
-        }
-    }
+//     private void exportDesign(JComboBox<String> formatCombo) {
+//     // Get the core design from Anne's canvas
+//     Design coreDesign = canvas.getDesignAdapter().getCoreDesign();
+    
+//     // Open Anagha's export window with the current design
+//     SwingUtilities.invokeLater(() -> {
+//         com.tshirt.designApp.Export.DesignCanvasExport exportWindow = 
+//             new com.tshirt.designApp.Export.DesignCanvasExport(coreDesign);
+//         exportWindow.setVisible(true);
+//     });
+    
+//     JOptionPane.showMessageDialog(this, 
+//         "Opening Export Window...\nUse the buttons in the new window to export as PNG or JPEG.",
+//         "Export", 
+//         JOptionPane.INFORMATION_MESSAGE);
+// }
 
-    private void exportAsImage(File file, String format) {
-        int imageType = format.equals("png") ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB;
-        BufferedImage img = new BufferedImage(800, 800, imageType);
-        Graphics2D g = img.createGraphics();
+//     private void exportAsImage(File file, String format) {
+//     try {
+//         // Use DesignAdapter to create the image (uses your core classes)
+//         BufferedImage image = designAdapter.exportToImage(800, 800);
+        
+//         // Add t-shirt on top
+//         Graphics2D g = image.createGraphics();
+//         drawTshirt(g);
+//         g.dispose();
+        
+//         ImageIO.write(image, format, file);
+//     } catch (IOException e) {
+//         showError("Error saving image: " + e.getMessage());
+//     }
+// }
 
-        if (format.equals("jpg")) {
-            g.setColor(Color.WHITE);
-            g.fillRect(0, 0, 800, 800);
-        }
+//     private void exportAsPdf(File file) {
+//     try {
+//         // Use DesignAdapter to create the image (uses your core classes)
+//         BufferedImage designImage = designAdapter.exportToImage(800, 800);
+        
+//         // Add t-shirt on top
+//         Graphics2D g = designImage.createGraphics();
+//         drawTshirt(g);
+//         g.dispose();
 
-        drawTshirt(g);
-        designAdapter.getLayersForDrawing().forEach(layer -> layer.draw(g));
-        g.dispose();
+//         // Create PDF
+//         try (FileOutputStream fos = new FileOutputStream(file)) {
+//             PdfDocument pdf = new PdfDocument(new PdfWriter(fos));
+//             Document document = new Document(pdf, PageSize.A4);
 
-        try {
-            ImageIO.write(img, format, file);
-        } catch (IOException e) {
-            showError("Error saving file: " + e.getMessage());
-        }
-    }
-
-    private void exportAsPdf(File file) {
-        BufferedImage designImage = new BufferedImage(800, 800, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = designImage.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        Layer temp = selectedLayer;
-        selectedLayer = null;
-        drawTshirt(g);
-        designAdapter.getLayersForDrawing().forEach(layer -> { if (layer.isVisible()) layer.draw(g); });
-        selectedLayer = temp;
-        g.dispose();
-
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            PdfDocument pdf = new PdfDocument(new PdfWriter(fos));
-            Document document = new Document(pdf, PageSize.A4);
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(designImage, "png", baos);
-            Image pdfImage = new Image(ImageDataFactory.create(baos.toByteArray()));
-            pdfImage.setAutoScale(true);
+//             ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//             ImageIO.write(designImage, "png", baos);
+//             Image pdfImage = new Image(ImageDataFactory.create(baos.toByteArray()));
+//             pdfImage.setAutoScale(true);
             
-            document.add(pdfImage);
-            document.close();
-        } catch (Exception e) {
-            showError("Error exporting to PDF: " + e.getMessage());
-        }
-    }
+//             document.add(pdfImage);
+//             document.close();
+//         }
+//     } catch (Exception e) {
+//         showError("Error exporting to PDF: " + e.getMessage());
+//     }
+// }
 
     // Utility methods
      private void loadTshirtImages() {
