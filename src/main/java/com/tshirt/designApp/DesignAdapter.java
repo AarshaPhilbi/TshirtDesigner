@@ -64,9 +64,13 @@ public class DesignAdapter {
     public void deleteLayer(Layer layer) {
         coreDesign.removeLayer(layer);
     }
+     
     
-    // Get the core design for export functionality
     public Design getCoreDesign() {
         return coreDesign;
     }
+
+    
+    
+    
 }
