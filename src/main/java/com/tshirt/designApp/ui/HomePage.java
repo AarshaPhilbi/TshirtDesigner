@@ -1,4 +1,5 @@
 package com.tshirt.designApp.ui;
+import com.tshirt.designApp.ui.DesignCanvasPage; 
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -467,59 +468,51 @@ public class HomePage extends JFrame {
     }
 
     // Action Handlers
-    private void startNewDesign(String style) {
+    // Action Handlers
+private void startNewDesign(String style) {
+    // Close homepage and open design canvas with selected style
+    this.dispose();
+    
+    SwingUtilities.invokeLater(() -> {
+        new DesignCanvasPage(currentUsername, style).setVisible(true);
+    });
+}
+
+private void editDesign(String designName) {
+    this.dispose();
+    SwingUtilities.invokeLater(() -> {
+        new DesignCanvasPage(currentUsername, "Regular").setVisible(true);
+        // TODO: Load the saved design
+    });
+}
+
+private void deleteDesign(String designName) {
+    int confirm = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to delete '" + designName + "'?",
+            "Confirm Delete",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+
+    if (confirm == JOptionPane.YES_OPTION) {
+        // TODO: Delete from database
         JOptionPane.showMessageDialog(this,
-                "Starting new " + style + " design.\nThis will open the Design Canvas.",
-                "New Design",
+                "Design deleted successfully.",
+                "Deleted",
                 JOptionPane.INFORMATION_MESSAGE);
 
-        // TODO: Open DesignCanvasPage with selected style
-        // this.dispose();
-        // new DesignCanvasPage(currentUsername, style, null).setVisible(true);
+        // Refresh the page
+        // reloadSavedDesigns();
     }
+}
 
-    private void editDesign(String designName) {
-        JOptionPane.showMessageDialog(this,
-                "Opening design: " + designName + "\nThis will load the saved design in the canvas.",
-                "Edit Design",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        // TODO: Load design from database and open in DesignCanvasPage
-        // Design design = designDAO.loadDesign(designName);
-        // this.dispose();
-        // new DesignCanvasPage(currentUsername, design).setVisible(true);
-    }
-
-    private void deleteDesign(String designName) {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to delete '" + designName + "'?",
-                "Confirm Delete",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            // TODO: Delete from database
-            JOptionPane.showMessageDialog(this,
-                    "Design deleted successfully.",
-                    "Deleted",
-                    JOptionPane.INFORMATION_MESSAGE);
-
-            // Refresh the page
-            // reloadSavedDesigns();
-        }
-    }
-
-    private void useTemplate(String templateName) {
-        JOptionPane.showMessageDialog(this,
-                "Loading template: " + templateName + "\nYou can customize this template in the canvas.",
-                "Use Template",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        // TODO: Load template and open in DesignCanvasPage
-        // Template template = templateDAO.loadTemplate(templateName);
-        // this.dispose();
-        // new DesignCanvasPage(currentUsername, template).setVisible(true);
-    }
+private void useTemplate(String templateName) {
+    this.dispose();
+    SwingUtilities.invokeLater(() -> {
+        new DesignCanvasPage(currentUsername, "Regular").setVisible(true);
+        // TODO: Pre-load template elements
+    });
+}
+    
 
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(this,
