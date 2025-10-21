@@ -1,5 +1,5 @@
 package com.tshirt.designApp.ui;
-import com.tshirt.designApp.ui.DesignCanvasPage; 
+import com.tshirt.designApp.ui.DesignCanvasPage;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -30,6 +30,7 @@ public class HomePage extends JFrame {
         mainContentPanel = new JPanel();
         mainContentPanel.setLayout(new BoxLayout(mainContentPanel, BoxLayout.Y_AXIS));
         mainContentPanel.setBackground(new Color(245, 245, 250));
+        mainContentPanel.setAlignmentX(Component.CENTER_ALIGNMENT); //added by Anne
 
         // Add sections
         mainContentPanel.add(createNewDesignSection());
@@ -48,7 +49,7 @@ public class HomePage extends JFrame {
 
     private JPanel createNavigationBar() {
         JPanel navBar = new JPanel(new BorderLayout());
-        navBar.setBackground(new Color(70, 130, 180));
+        navBar.setBackground(new Color(99, 94, 59));
         navBar.setPreferredSize(new Dimension(1200, 70));
         navBar.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
@@ -91,12 +92,12 @@ public class HomePage extends JFrame {
         // Section Title
         JLabel titleLabel = new JLabel("Start New Design");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT); //changed from left alignment
 
         JLabel subtitleLabel = new JLabel("Choose a T-shirt style to begin designing");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         subtitleLabel.setForeground(new Color(100, 100, 100));
-        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT); //changed from left
 
         section.add(titleLabel);
         section.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -104,9 +105,9 @@ public class HomePage extends JFrame {
         section.add(Box.createRigidArea(new Dimension(0, 25)));
 
         // T-Shirt Style Options Panel
-        JPanel stylesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 0));
+        JPanel stylesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 0)); // changed from left
         stylesPanel.setBackground(new Color(245, 245, 250));
-        stylesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        stylesPanel.setAlignmentX(Component.CENTER_ALIGNMENT); //changed from left
 
         stylesPanel.add(createStyleCard("Cropped", "Trendy cropped fit", new Color(255, 182, 193)));
         stylesPanel.add(createStyleCard("Regular", "Classic regular fit", new Color(135, 206, 250)));
@@ -128,7 +129,7 @@ public class HomePage extends JFrame {
         ));
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // T-Shirt Visual Representation
+        // T-Shirt Image Panel (MODIFIED)
         JPanel tshirtPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -136,26 +137,43 @@ public class HomePage extends JFrame {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // Draw simple t-shirt shape
-                g2d.setColor(accentColor);
-                int width = getWidth();
-                int height = getHeight();
+                try {
+                    // Load image based on style name
+                    String imagePath = "/images/" + styleName.toLowerCase() + ".jpeg";
+                    java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(
+                            getClass().getResource(imagePath)
+                    );
 
-                // Body
-                g2d.fillRoundRect(width/4, height/3, width/2, height/2, 20, 20);
+                    // Draw the image centered
+                    int imgWidth = 160;
+                    int imgHeight = 160;
+                    int x = (getWidth() - imgWidth) / 2;
+                    int y = (getHeight() - imgHeight) / 2;
+                    g2d.drawImage(img, x, y, imgWidth, imgHeight, null);
 
-                // Sleeves
-                g2d.fillOval(width/8, height/3, width/4, height/5);
-                g2d.fillOval(width*5/8, height/3, width/4, height/5);
+                } catch (Exception e) {
+                    // Fallback to original drawing if image not found
+                    g2d.setColor(accentColor);
+                    int width = getWidth();
+                    int height = getHeight();
 
-                // Neck
-                g2d.setColor(Color.WHITE);
-                g2d.fillOval(width/2 - 15, height/3 - 5, 30, 30);
+                    // Body
+                    g2d.fillRoundRect(width/4, height/3, width/2, height/2, 20, 20);
+
+                    // Sleeves
+                    g2d.fillOval(width/8, height/3, width/4, height/5);
+                    g2d.fillOval(width*5/8, height/3, width/4, height/5);
+
+                    // Neck
+                    g2d.setColor(Color.WHITE);
+                    g2d.fillOval(width/2 - 15, height/3 - 5, 30, 30);
+                }
             }
         };
         tshirtPanel.setPreferredSize(new Dimension(250, 180));
         tshirtPanel.setBackground(Color.WHITE);
 
+        // Rest of the code remains the same...
         // Info Panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
@@ -173,7 +191,7 @@ public class HomePage extends JFrame {
 
         JButton selectButton = new JButton("Design Now");
         selectButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        selectButton.setBackground(new Color(70, 130, 180));
+        selectButton.setBackground(new Color(99, 94, 59));
         selectButton.setForeground(Color.WHITE);
         selectButton.setFont(new Font("Arial", Font.BOLD, 14));
         selectButton.setFocusPainted(false);
@@ -220,12 +238,12 @@ public class HomePage extends JFrame {
         // Section Title
         JLabel titleLabel = new JLabel("Your Saved Designs");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel subtitleLabel = new JLabel("Continue editing your previous designs");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         subtitleLabel.setForeground(new Color(100, 100, 100));
-        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         section.add(titleLabel);
         section.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -233,9 +251,9 @@ public class HomePage extends JFrame {
         section.add(Box.createRigidArea(new Dimension(0, 25)));
 
         // Saved Designs Grid
-        JPanel designsGrid = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        JPanel designsGrid = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
         designsGrid.setBackground(new Color(245, 245, 250));
-        designsGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+        designsGrid.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Sample saved designs (TODO: Load from database)
         designsGrid.add(createSavedDesignCard("My Design 1", "Regular", "2 days ago"));
@@ -273,7 +291,7 @@ public class HomePage extends JFrame {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setColor(new Color(240, 240, 245));
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2d.setColor(new Color(70, 130, 180));
+                g2d.setColor(new Color(99, 94, 59));
                 g2d.setFont(new Font("Arial", Font.BOLD, 16));
                 String text = "Design Preview";
                 FontMetrics fm = g2d.getFontMetrics();
@@ -350,12 +368,12 @@ public class HomePage extends JFrame {
         // Section Title
         JLabel titleLabel = new JLabel("Ready-Made Templates");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel subtitleLabel = new JLabel("Start with a template and customize it to your style");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         subtitleLabel.setForeground(new Color(100, 100, 100));
-        subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         section.add(titleLabel);
         section.add(Box.createRigidArea(new Dimension(0, 5)));
@@ -363,9 +381,9 @@ public class HomePage extends JFrame {
         section.add(Box.createRigidArea(new Dimension(0, 25)));
 
         // Templates Grid
-        JPanel templatesGrid = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        JPanel templatesGrid = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
         templatesGrid.setBackground(new Color(245, 245, 250));
-        templatesGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
+        templatesGrid.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         // Sample templates
         templatesGrid.add(createTemplateCard("Vintage Rock", "Retro music theme", new Color(139, 69, 19)));
@@ -469,50 +487,50 @@ public class HomePage extends JFrame {
 
     // Action Handlers
     // Action Handlers
-private void startNewDesign(String style) {
-    // Close homepage and open design canvas with selected style
-    this.dispose();
-    
-    SwingUtilities.invokeLater(() -> {
-        new DesignCanvasPage(currentUsername, style).setVisible(true);
-    });
-}
+    private void startNewDesign(String style) {
+        // Close homepage and open design canvas with selected style
+        this.dispose();
 
-private void editDesign(String designName) {
-    this.dispose();
-    SwingUtilities.invokeLater(() -> {
-        new DesignCanvasPage(currentUsername, "Regular").setVisible(true);
-        // TODO: Load the saved design
-    });
-}
-
-private void deleteDesign(String designName) {
-    int confirm = JOptionPane.showConfirmDialog(this,
-            "Are you sure you want to delete '" + designName + "'?",
-            "Confirm Delete",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE);
-
-    if (confirm == JOptionPane.YES_OPTION) {
-        // TODO: Delete from database
-        JOptionPane.showMessageDialog(this,
-                "Design deleted successfully.",
-                "Deleted",
-                JOptionPane.INFORMATION_MESSAGE);
-
-        // Refresh the page
-        // reloadSavedDesigns();
+        SwingUtilities.invokeLater(() -> {
+            new DesignCanvasPage(currentUsername, style).setVisible(true);
+        });
     }
-}
 
-private void useTemplate(String templateName) {
-    this.dispose();
-    SwingUtilities.invokeLater(() -> {
-        new DesignCanvasPage(currentUsername, "Regular").setVisible(true);
-        // TODO: Pre-load template elements
-    });
-}
-    
+    private void editDesign(String designName) {
+        this.dispose();
+        SwingUtilities.invokeLater(() -> {
+            new DesignCanvasPage(currentUsername, "Regular").setVisible(true);
+            // TODO: Load the saved design
+        });
+    }
+
+    private void deleteDesign(String designName) {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to delete '" + designName + "'?",
+                "Confirm Delete",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            // TODO: Delete from database
+            JOptionPane.showMessageDialog(this,
+                    "Design deleted successfully.",
+                    "Deleted",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            // Refresh the page
+            // reloadSavedDesigns();
+        }
+    }
+
+    private void useTemplate(String templateName) {
+        this.dispose();
+        SwingUtilities.invokeLater(() -> {
+            new DesignCanvasPage(currentUsername, "Regular").setVisible(true);
+            // TODO: Pre-load template elements
+        });
+    }
+
 
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(this,
