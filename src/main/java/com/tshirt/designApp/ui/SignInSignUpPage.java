@@ -3,6 +3,8 @@ package com.tshirt.designApp.ui;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import com.tshirt.designApp.UserSession;
+import com.tshirt.designApp.database.UserAuthentication;
 
 public class SignInSignUpPage extends JFrame {
 
@@ -258,18 +260,28 @@ public class SignInSignUpPage extends JFrame {
             return;
         }
 
-        // TODO: Add database authentication logic here
-        // For now, just show a success message
-        JOptionPane.showMessageDialog(this,
-                "Sign In functionality will be connected to database.\nUsername: " + username,
-                "Sign In",
-                JOptionPane.INFORMATION_MESSAGE);
+        // Database authentication
+        if (UserSession.getInstance().login(username, password)) {
+            JOptionPane.showMessageDialog(this,
+                    "Login successful! Welcome, " + username,
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
 
-        // After successful login, you would navigate to HomePage
-        // this.dispose();
-        // new HomePage(username).setVisible(true);
+            // Clear fields
+            signInUsernameField.setText("");
+            signInPasswordField.setText("");
+
+            // After successful login, navigate to HomePage
+            // this.dispose();
+            // new HomePage().setVisible(true);
+
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Invalid username or password.",
+                    "Login Failed",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
-
     private void handleSignUp() {
         String username = signUpUsernameField.getText().trim();
         String email = signUpEmailField.getText().trim();
@@ -310,22 +322,34 @@ public class SignInSignUpPage extends JFrame {
             return;
         }
 
-        // TODO: Add database registration logic here
-        // For now, just show a success message
-        JOptionPane.showMessageDialog(this,
-                "Sign Up functionality will be connected to database.\nUsername: " + username + "\nEmail: " + email,
-                "Sign Up Success",
-                JOptionPane.INFORMATION_MESSAGE);
+        // Database registration
+        boolean success = UserAuthentication.registerUser(username, email, password);
 
-        // Clear fields and switch to sign in
-        signUpUsernameField.setText("");
-        signUpEmailField.setText("");
-        signUpPasswordField.setText("");
-        signUpConfirmPasswordField.setText("");
-        cardLayout.show(mainPanel, "SignIn");
+        if (success) {
+            JOptionPane.showMessageDialog(this,
+                    "Registration successful! Please sign in.",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            // Clear fields and switch to sign in
+            signUpUsernameField.setText("");
+            signUpEmailField.setText("");
+            signUpPasswordField.setText("");
+            signUpConfirmPasswordField.setText("");
+            cardLayout.show(mainPanel, "SignIn");
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Registration failed. Username or email may already exist.",
+                    "Registration Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
+    // REPLACEMENT CODE: Put this inside the SignInSignUpPage class
     public static void main(String[] args) {
+        // ➡ CRITICAL FIX: Initialize the database FIRST
+        com.tshirt.designApp.database.DatabaseManager.initializeDatabase();
+
         SwingUtilities.invokeLater(() -> {
             new SignInSignUpPage().setVisible(true);
         });

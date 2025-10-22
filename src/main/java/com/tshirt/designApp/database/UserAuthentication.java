@@ -25,15 +25,13 @@ public class UserAuthentication {
     public static boolean registerUser(String username, String email, String password) {
         String sql = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
 
-        // Declaring conn outside the try-with-resources for the rollback logic
         Connection conn = null;
 
         try {
             conn = DatabaseManager.getConnection();
 
-            // Ensure auto-commit is off for explicit transaction control (typical default, but safer to check)
-            // If not explicitly set, SQLite defaults to manual transaction management.
-            // We ensure we handle the commit manually.
+            // CRITICAL FIX: Disable autocommit for manual transaction control
+            conn.setAutoCommit(false);
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
@@ -41,15 +39,15 @@ public class UserAuthentication {
                 pstmt.setString(2, email);
                 pstmt.setString(3, hashPassword(password));
 
-                int rowsAffected = pstmt.executeUpdate(); // Execute the statement
+                int rowsAffected = pstmt.executeUpdate();
 
-                // CRITICAL FIX: Explicitly commit the transaction if the insert worked
                 if (rowsAffected > 0) {
-                    conn.commit();
+                    conn.commit(); // Now this will work
                     System.out.println("User registered successfully: " + username);
                     return true;
                 } else {
-                    return false; // Insert failed for unknown reason
+                    conn.rollback();
+                    return false;
                 }
             }
 
@@ -58,23 +56,24 @@ public class UserAuthentication {
             if (conn != null) {
                 try {
                     conn.rollback();
+                    System.err.println("Transaction rolled back due to error.");
                 } catch (SQLException rollbackEx) {
                     System.err.println("Rollback failed: " + rollbackEx.getMessage());
                 }
             }
 
-            // Print detailed error information for debugging
             if (e.getMessage().contains("UNIQUE") || e.getMessage().contains("constraint")) {
-                System.err.println("Registration failed: Username or email already exists (UNIQUE constraint violation).");
+                System.err.println("Registration failed: Username or email already exists.");
             } else {
                 System.err.println("Error registering user: " + e.getMessage());
                 e.printStackTrace();
             }
             return false;
+
         } finally {
-            // Ensure connection is closed
             if (conn != null) {
                 try {
+                    conn.setAutoCommit(true); // Restore autocommit
                     conn.close();
                 } catch (SQLException closeEx) {
                     System.err.println("Error closing connection: " + closeEx.getMessage());

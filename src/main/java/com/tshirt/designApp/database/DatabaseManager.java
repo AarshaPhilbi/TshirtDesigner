@@ -9,8 +9,8 @@ import java.sql.*;
  * Handles database connection and initialization
  */
 public class DatabaseManager {
-    
-    private static final String DB_URL = "jdbc:sqlite:CustomTshirt.db";
+
+    private static final String DB_URL = "jdbc:sqlite:C:/TshirtAppData/CustomTshirt.db";
     private static final String SCHEMA_FILE = "db/schema.sql";
     
     /**
