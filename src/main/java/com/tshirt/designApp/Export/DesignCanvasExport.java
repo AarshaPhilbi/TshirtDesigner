@@ -63,6 +63,7 @@ public class DesignCanvasExport extends JFrame {
         setVisible(true);
     }
 
+    // **UPDATED: Now preserves outline**
     private void drawTshirt(Graphics2D g) {
         String key = tshirtStyle + (isFrontView ? "_Front" : "_Back");
         BufferedImage img = tshirtImages.get(key);
@@ -73,6 +74,7 @@ public class DesignCanvasExport extends JFrame {
             if (tshirtColor.equals(Color.WHITE)) {
                 g.drawImage(img, x, y, w, h, null);
             } else {
+                // Create colored version
                 BufferedImage temp = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g2 = temp.createGraphics();
                 g2.drawImage(img, 0, 0, w, h, null);
@@ -80,12 +82,52 @@ public class DesignCanvasExport extends JFrame {
                 g2.setColor(tshirtColor);
                 g2.fillRect(0, 0, w, h);
                 g2.dispose();
+
+                // Draw colored t-shirt
                 g.drawImage(temp, x, y, w, h, null);
+
+                // **NEW: Draw outline on top**
+                BufferedImage outline = extractOutline(img, w, h);
+                if (outline != null) {
+                    g.drawImage(outline, x, y, w, h, null);
+                }
             }
         } else {
             g.setColor(tshirtColor);
             g.fillRect(250, 150, 300, 400);
         }
+    }
+
+    // **NEW METHOD: Extract and draw the outline**
+    private BufferedImage extractOutline(BufferedImage original, int width, int height) {
+        BufferedImage outline = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = outline.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw original image scaled
+        g2.drawImage(original, 0, 0, width, height, null);
+
+        // Apply a filter to keep only dark pixels (the outline)
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int rgb = outline.getRGB(x, y);
+                int alpha = (rgb >> 24) & 0xFF;
+                int red = (rgb >> 16) & 0xFF;
+                int green = (rgb >> 8) & 0xFF;
+                int blue = rgb & 0xFF;
+
+                // Calculate brightness
+                int brightness = (red + green + blue) / 3;
+
+                // Keep only dark pixels (outline) - threshold of 100
+                if (brightness > 100 || alpha < 50) {
+                    outline.setRGB(x, y, 0x00000000); // Make transparent
+                }
+            }
+        }
+
+        g2.dispose();
+        return outline;
     }
 
     private class CanvasPanel extends JPanel {

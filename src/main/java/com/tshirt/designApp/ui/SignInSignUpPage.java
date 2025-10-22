@@ -3,353 +3,227 @@ package com.tshirt.designApp.ui;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import com.tshirt.designApp.UserSession;
-import com.tshirt.designApp.database.UserAuthentication;
 
 public class SignInSignUpPage extends JFrame {
-
-    private JPanel mainPanel;
+    private JPanel cardPanel;
     private CardLayout cardLayout;
 
-    // Sign In Components
-    private JTextField signInUsernameField;
-    private JPasswordField signInPasswordField;
-    private JButton signInButton;
-    private JButton goToSignUpButton;
-
-    // Sign Up Components
-    private JTextField signUpUsernameField;
-    private JTextField signUpEmailField;
-    private JPasswordField signUpPasswordField;
-    private JPasswordField signUpConfirmPasswordField;
-    private JButton signUpButton;
-    private JButton goToSignInButton;
-
     public SignInSignUpPage() {
-        setTitle("Custom T-Shirt Designer - Login");
-        setSize(1200, 800);
+        setTitle("T-Shirt Designer - Sign In / Sign Up");
+        setSize(400, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setResizable(true);
+        setResizable(false);
 
-        // CardLayout to switch between Sign In and Sign Up
         cardLayout = new CardLayout();
-        mainPanel = new JPanel(cardLayout);
+        cardPanel = new JPanel(cardLayout);
 
-        // Create both panels
-        JPanel signInPanel = createSignInPanel();
-        JPanel signUpPanel = createSignUpPanel();
+        // Create and add both panels
+        cardPanel.add(createSignInPanel(), "SIGNIN");
+        cardPanel.add(createSignUpPanel(), "SIGNUP");
 
-        mainPanel.add(signInPanel, "SignIn");
-        mainPanel.add(signUpPanel, "SignUp");
-
-        add(mainPanel);
-
-        // Show Sign In by default
-        cardLayout.show(mainPanel, "SignIn");
+        add(cardPanel);
+        cardLayout.show(cardPanel, "SIGNIN");
     }
 
     private JPanel createSignInPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
-        panel.setBackground(new Color(240, 240, 245));
-
-        // Header
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBackground(new Color(70, 130, 180));
-        headerPanel.setPreferredSize(new Dimension(450, 100));
-        JLabel headerLabel = new JLabel("Sign In");
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 32));
-        headerLabel.setForeground(Color.WHITE);
-        headerPanel.add(headerLabel);
-
-        // Form Panel
-        JPanel formPanel = new JPanel();
-        formPanel.setLayout(new GridBagLayout());
-        formPanel.setBackground(new Color(240, 240, 245));
-        formPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
-
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Title
+        JLabel titleLabel = new JLabel("Sign In", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        panel.add(titleLabel, gbc);
 
         // Username
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        JLabel usernameLabel = new JLabel("Username");
-        usernameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(usernameLabel, gbc);
+        JLabel userLabel = new JLabel("Username:");
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 1;
+        panel.add(userLabel, gbc);
 
-        gbc.gridy = 1;
-        signInUsernameField = new JTextField(20);
-        signInUsernameField.setPreferredSize(new Dimension(300, 35));
-        signInUsernameField.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(signInUsernameField, gbc);
+        JTextField userField = new JTextField(15);
+        gbc.gridx = 1; gbc.gridy = 1;
+        panel.add(userField, gbc);
 
         // Password
-        gbc.gridy = 2;
-        JLabel passwordLabel = new JLabel("Password");
-        passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(passwordLabel, gbc);
+        JLabel passLabel = new JLabel("Password:");
+        gbc.gridx = 0; gbc.gridy = 2;
+        panel.add(passLabel, gbc);
 
-        gbc.gridy = 3;
-        signInPasswordField = new JPasswordField(20);
-        signInPasswordField.setPreferredSize(new Dimension(300, 35));
-        signInPasswordField.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(signInPasswordField, gbc);
+        JPasswordField passField = new JPasswordField(15);
+        gbc.gridx = 1; gbc.gridy = 2;
+        panel.add(passField, gbc);
 
         // Sign In Button
-        gbc.gridy = 4;
-        gbc.insets = new Insets(30, 10, 10, 10);
-        signInButton = new JButton("Sign In");
-        signInButton.setPreferredSize(new Dimension(300, 40));
-        signInButton.setBackground(new Color(70, 130, 180));
-        signInButton.setForeground(Color.WHITE);
-        signInButton.setFont(new Font("Arial", Font.BOLD, 16));
-        signInButton.setFocusPainted(false);
-        signInButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        signInButton.addActionListener(e -> handleSignIn());
-        formPanel.add(signInButton, gbc);
+        JButton signInBtn = new JButton("Sign In");
+        signInBtn.setBackground(new Color(70, 130, 180));
+        signInBtn.setForeground(Color.WHITE);
+        signInBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        panel.add(signInBtn, gbc);
 
         // Switch to Sign Up
-        gbc.gridy = 5;
-        gbc.insets = new Insets(20, 10, 10, 10);
-        JPanel switchPanel = new JPanel();
-        switchPanel.setBackground(new Color(240, 240, 245));
-        JLabel switchLabel = new JLabel("Don't have an account? ");
-        switchLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        goToSignUpButton = new JButton("Sign Up");
-        goToSignUpButton.setFont(new Font("Arial", Font.BOLD, 12));
-        goToSignUpButton.setForeground(new Color(70, 130, 180));
-        goToSignUpButton.setBorderPainted(false);
-        goToSignUpButton.setContentAreaFilled(false);
-        goToSignUpButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        goToSignUpButton.addActionListener(e -> cardLayout.show(mainPanel, "SignUp"));
-        switchPanel.add(switchLabel);
-        switchPanel.add(goToSignUpButton);
-        formPanel.add(switchPanel, gbc);
+        JLabel switchLabel = new JLabel("Don't have an account? Sign Up");
+        switchLabel.setForeground(Color.BLUE);
+        switchLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        switchLabel.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                cardLayout.show(cardPanel, "SIGNUP");
+            }
+        });
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        panel.add(switchLabel, gbc);
 
-        panel.add(headerPanel, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
+        // Sign In Action
+        signInBtn.addActionListener(e -> {
+            String username = userField.getText().trim();
+            String password = new String(passField.getPassword());
+
+            if (username.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all fields", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // TODO: Add actual authentication logic here
+            boolean loginSuccess = authenticateUser(username, password);
+
+            if (loginSuccess) {
+                // SUCCESS: Close login and open homepage
+                this.dispose();
+                SwingUtilities.invokeLater(() -> {
+                    new HomePage(username).setVisible(true);
+                });
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid username or password", "Login Failed", JOptionPane.ERROR_MESSAGE);
+            }
+        });
 
         return panel;
     }
 
     private JPanel createSignUpPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
-        panel.setBackground(new Color(240, 240, 245));
-
-        // Header
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBackground(new Color(34, 139, 34));
-        headerPanel.setPreferredSize(new Dimension(450, 100));
-        JLabel headerLabel = new JLabel("Sign Up");
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 32));
-        headerLabel.setForeground(Color.WHITE);
-        headerPanel.add(headerLabel);
-
-        // Form Panel
-        JPanel formPanel = new JPanel();
-        formPanel.setLayout(new GridBagLayout());
-        formPanel.setBackground(new Color(240, 240, 245));
-        formPanel.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
-
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
         GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(8, 10, 8, 10);
+
+        // Title
+        JLabel titleLabel = new JLabel("Sign Up", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        panel.add(titleLabel, gbc);
 
         // Username
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        JLabel usernameLabel = new JLabel("Username");
-        usernameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(usernameLabel, gbc);
+        JLabel userLabel = new JLabel("Username:");
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 1;
+        panel.add(userLabel, gbc);
 
-        gbc.gridy = 1;
-        signUpUsernameField = new JTextField(20);
-        signUpUsernameField.setPreferredSize(new Dimension(300, 35));
-        signUpUsernameField.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(signUpUsernameField, gbc);
+        JTextField userField = new JTextField(15);
+        gbc.gridx = 1; gbc.gridy = 1;
+        panel.add(userField, gbc);
 
         // Email
-        gbc.gridy = 2;
-        JLabel emailLabel = new JLabel("Email");
-        emailLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(emailLabel, gbc);
+        JLabel emailLabel = new JLabel("Email:");
+        gbc.gridx = 0; gbc.gridy = 2;
+        panel.add(emailLabel, gbc);
 
-        gbc.gridy = 3;
-        signUpEmailField = new JTextField(20);
-        signUpEmailField.setPreferredSize(new Dimension(300, 35));
-        signUpEmailField.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(signUpEmailField, gbc);
+        JTextField emailField = new JTextField(15);
+        gbc.gridx = 1; gbc.gridy = 2;
+        panel.add(emailField, gbc);
 
         // Password
-        gbc.gridy = 4;
-        JLabel passwordLabel = new JLabel("Password");
-        passwordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(passwordLabel, gbc);
+        JLabel passLabel = new JLabel("Password:");
+        gbc.gridx = 0; gbc.gridy = 3;
+        panel.add(passLabel, gbc);
 
-        gbc.gridy = 5;
-        signUpPasswordField = new JPasswordField(20);
-        signUpPasswordField.setPreferredSize(new Dimension(300, 35));
-        signUpPasswordField.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(signUpPasswordField, gbc);
+        JPasswordField passField = new JPasswordField(15);
+        gbc.gridx = 1; gbc.gridy = 3;
+        panel.add(passField, gbc);
 
         // Confirm Password
-        gbc.gridy = 6;
-        JLabel confirmPasswordLabel = new JLabel("Confirm Password");
-        confirmPasswordLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(confirmPasswordLabel, gbc);
+        JLabel confirmLabel = new JLabel("Confirm Password:");
+        gbc.gridx = 0; gbc.gridy = 4;
+        panel.add(confirmLabel, gbc);
 
-        gbc.gridy = 7;
-        signUpConfirmPasswordField = new JPasswordField(20);
-        signUpConfirmPasswordField.setPreferredSize(new Dimension(300, 35));
-        signUpConfirmPasswordField.setFont(new Font("Arial", Font.PLAIN, 14));
-        formPanel.add(signUpConfirmPasswordField, gbc);
+        JPasswordField confirmField = new JPasswordField(15);
+        gbc.gridx = 1; gbc.gridy = 4;
+        panel.add(confirmField, gbc);
 
         // Sign Up Button
-        gbc.gridy = 8;
-        gbc.insets = new Insets(20, 10, 10, 10);
-        signUpButton = new JButton("Sign Up");
-        signUpButton.setPreferredSize(new Dimension(300, 40));
-        signUpButton.setBackground(new Color(34, 139, 34));
-        signUpButton.setForeground(Color.WHITE);
-        signUpButton.setFont(new Font("Arial", Font.BOLD, 16));
-        signUpButton.setFocusPainted(false);
-        signUpButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        signUpButton.addActionListener(e -> handleSignUp());
-        formPanel.add(signUpButton, gbc);
+        JButton signUpBtn = new JButton("Sign Up");
+        signUpBtn.setBackground(new Color(40, 167, 69));
+        signUpBtn.setForeground(Color.WHITE);
+        signUpBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        panel.add(signUpBtn, gbc);
 
         // Switch to Sign In
-        gbc.gridy = 9;
-        gbc.insets = new Insets(15, 10, 10, 10);
-        JPanel switchPanel = new JPanel();
-        switchPanel.setBackground(new Color(240, 240, 245));
-        JLabel switchLabel = new JLabel("Already have an account? ");
-        switchLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        goToSignInButton = new JButton("Sign In");
-        goToSignInButton.setFont(new Font("Arial", Font.BOLD, 12));
-        goToSignInButton.setForeground(new Color(34, 139, 34));
-        goToSignInButton.setBorderPainted(false);
-        goToSignInButton.setContentAreaFilled(false);
-        goToSignInButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        goToSignInButton.addActionListener(e -> cardLayout.show(mainPanel, "SignIn"));
-        switchPanel.add(switchLabel);
-        switchPanel.add(goToSignInButton);
-        formPanel.add(switchPanel, gbc);
+        JLabel switchLabel = new JLabel("Already have an account? Sign In");
+        switchLabel.setForeground(Color.BLUE);
+        switchLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        switchLabel.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                cardLayout.show(cardPanel, "SIGNIN");
+            }
+        });
+        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
+        panel.add(switchLabel, gbc);
 
-        panel.add(headerPanel, BorderLayout.NORTH);
-        panel.add(formPanel, BorderLayout.CENTER);
+        // Sign Up Action
+        signUpBtn.addActionListener(e -> {
+            String username = userField.getText().trim();
+            String email = emailField.getText().trim();
+            String password = new String(passField.getPassword());
+            String confirmPassword = new String(confirmField.getPassword());
+
+            if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all fields", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!password.equals(confirmPassword)) {
+                JOptionPane.showMessageDialog(this, "Passwords do not match", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // TODO: Add actual registration logic here
+            boolean registrationSuccess = registerUser(username, email, password);
+
+            if (registrationSuccess) {
+                JOptionPane.showMessageDialog(this, "Registration successful! Please sign in.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                cardLayout.show(cardPanel, "SIGNIN");
+                // Clear fields
+                userField.setText("");
+                emailField.setText("");
+                passField.setText("");
+                confirmField.setText("");
+            } else {
+                JOptionPane.showMessageDialog(this, "Registration failed. Username may already exist.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
 
         return panel;
     }
 
-    private void handleSignIn() {
-        String username = signInUsernameField.getText().trim();
-        String password = new String(signInPasswordField.getPassword());
-
-        // Validation
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Please fill in all fields.",
-                    "Input Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Database authentication
-        if (UserSession.getInstance().login(username, password)) {
-            JOptionPane.showMessageDialog(this,
-                    "Login successful! Welcome, " + username,
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-
-            // Clear fields
-            signInUsernameField.setText("");
-            signInPasswordField.setText("");
-
-            // After successful login, navigate to HomePage
-            // this.dispose();
-            // new HomePage().setVisible(true);
-
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    "Invalid username or password.",
-                    "Login Failed",
-                    JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    private void handleSignUp() {
-        String username = signUpUsernameField.getText().trim();
-        String email = signUpEmailField.getText().trim();
-        String password = new String(signUpPasswordField.getPassword());
-        String confirmPassword = new String(signUpConfirmPasswordField.getPassword());
-
-        // Validation
-        if (username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Please fill in all fields.",
-                    "Input Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (!password.equals(confirmPassword)) {
-            JOptionPane.showMessageDialog(this,
-                    "Passwords do not match.",
-                    "Password Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (password.length() < 6) {
-            JOptionPane.showMessageDialog(this,
-                    "Password must be at least 6 characters long.",
-                    "Password Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Basic email validation
-        if (!email.contains("@") || !email.contains(".")) {
-            JOptionPane.showMessageDialog(this,
-                    "Please enter a valid email address.",
-                    "Email Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Database registration
-        boolean success = UserAuthentication.registerUser(username, email, password);
-
-        if (success) {
-            JOptionPane.showMessageDialog(this,
-                    "Registration successful! Please sign in.",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-
-            // Clear fields and switch to sign in
-            signUpUsernameField.setText("");
-            signUpEmailField.setText("");
-            signUpPasswordField.setText("");
-            signUpConfirmPasswordField.setText("");
-            cardLayout.show(mainPanel, "SignIn");
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    "Registration failed. Username or email may already exist.",
-                    "Registration Error",
-                    JOptionPane.ERROR_MESSAGE);
-        }
+    // TODO: Implement actual authentication
+    private boolean authenticateUser(String username, String password) {
+        // For now, accept any non-empty credentials
+        // Later: Connect to database
+        return !username.isEmpty() && !password.isEmpty();
     }
 
-    // REPLACEMENT CODE: Put this inside the SignInSignUpPage class
+    // TODO: Implement actual registration
+    private boolean registerUser(String username, String email, String password) {
+        // For now, accept any registration
+        // Later: Connect to database and check for duplicates
+        return !username.isEmpty() && !email.isEmpty() && !password.isEmpty();
+    }
+
     public static void main(String[] args) {
-        // ➡ CRITICAL FIX: Initialize the database FIRST
-        com.tshirt.designApp.database.DatabaseManager.initializeDatabase();
-
         SwingUtilities.invokeLater(() -> {
             new SignInSignUpPage().setVisible(true);
         });

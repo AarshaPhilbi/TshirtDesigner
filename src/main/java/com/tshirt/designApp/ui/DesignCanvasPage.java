@@ -512,6 +512,8 @@ class TshirtCanvasPanel extends JPanel {
     }
 
     // **NEW METHOD: Extract and draw the outline**
+
+    // **NEW METHOD: Extract and draw the outline**
     private BufferedImage extractOutline(BufferedImage original, int width, int height) {
         BufferedImage outline = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = outline.createGraphics();
