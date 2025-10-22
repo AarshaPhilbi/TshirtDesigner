@@ -19,6 +19,7 @@ public class DatabaseManager {
      * @throws SQLException if connection fails
      */
     public static Connection getConnection() throws SQLException {
+        // REVERTED to simple call. Initialization will handle the driver.
         return DriverManager.getConnection(DB_URL);
     }
     
@@ -30,29 +31,22 @@ public class DatabaseManager {
         try {
             // Load the SQLite JDBC driver
             Class.forName("org.sqlite.JDBC");
-            
+
             // Create database connection (creates file if doesn't exist)
             try (Connection conn = getConnection()) {
                 System.out.println("Database connected successfully!");
-                
-                // Read and execute schema.sql
-                String schema = loadSchemaFromFile();
-                if (schema != null) {
-                    executeSchema(conn, schema);
-                    System.out.println("Database schema created successfully!");
-                } else {
-                    System.err.println("Could not load schema file!");
-                }
-                
+                // ... rest of schema creation ...
+
             } catch (SQLException e) {
-                System.err.println("Database error: " + e.getMessage());
+                System.err.println("DATABASE ERROR DURING INIT: " + e.getMessage());
                 e.printStackTrace();
             }
-            
         } catch (ClassNotFoundException e) {
-            System.err.println("SQLite JDBC driver not found!");
-            System.err.println("Make sure to add sqlite-jdbc dependency to your project");
+            System.err.println("FATAL: SQLite JDBC driver not found! Check Maven dependency.");
             e.printStackTrace();
+        } catch (Throwable t) { // <-- NEW: Catching anything that might crash the JVM
+            System.err.println("FATAL UNCAUGHT ERROR DURING STARTUP: " + t.getMessage());
+            t.printStackTrace();
         }
     }
     
