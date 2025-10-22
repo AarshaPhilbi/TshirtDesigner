@@ -3,12 +3,6 @@ package com.tshirt.designApp.ui;
 import com.tshirt.designApp.Layer;
 import com.tshirt.designApp.Design;
 import com.tshirt.designApp.DesignAdapter;
-import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.kernel.geom.PageSize;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Image;
 import javax.swing.event.ChangeListener;
 
 import javax.swing.*;
@@ -480,25 +474,73 @@ class TshirtCanvasPanel extends JPanel {
     private void drawTshirt(Graphics2D g) {
         String key = tShirtStyle + (isFrontView ? "_Front" : "_Back");
         BufferedImage img = tshirtImages.get(key);
-        
+
         if (img != null) {
             int w = 400, h = 500, x = 200, y = 150;
+
             if (tshirtColor.equals(Color.WHITE)) {
+                // Just draw the original image
                 g.drawImage(img, x, y, w, h, null);
             } else {
+                // Create a temporary image for the colored t-shirt
                 BufferedImage temp = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g2 = temp.createGraphics();
+
+                // Draw the original image
                 g2.drawImage(img, 0, 0, w, h, null);
+
+                // Apply color using SrcIn composite (colors only non-transparent pixels)
                 g2.setComposite(AlphaComposite.SrcIn);
                 g2.setColor(tshirtColor);
                 g2.fillRect(0, 0, w, h);
                 g2.dispose();
+
+                // Draw the colored t-shirt
                 g.drawImage(temp, x, y, w, h, null);
+
+                // **NEW: Draw the outline on top**
+                // Create outline image by extracting edges
+                BufferedImage outline = extractOutline(img, w, h);
+                if (outline != null) {
+                    g.drawImage(outline, x, y, w, h, null);
+                }
             }
         } else {
             g.setColor(tshirtColor);
             g.fillRect(250, 150, 300, 400);
         }
+    }
+
+    // **NEW METHOD: Extract and draw the outline**
+    private BufferedImage extractOutline(BufferedImage original, int width, int height) {
+        BufferedImage outline = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = outline.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw original image scaled
+        g2.drawImage(original, 0, 0, width, height, null);
+
+        // Apply a filter to keep only dark pixels (the outline)
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int rgb = outline.getRGB(x, y);
+                int alpha = (rgb >> 24) & 0xFF;
+                int red = (rgb >> 16) & 0xFF;
+                int green = (rgb >> 8) & 0xFF;
+                int blue = rgb & 0xFF;
+
+                // Calculate brightness
+                int brightness = (red + green + blue) / 3;
+
+                // Keep only dark pixels (outline) - threshold of 100
+                if (brightness > 100 || alpha < 50) {
+                    outline.setRGB(x, y, 0x00000000); // Make transparent
+                }
+            }
+        }
+
+        g2.dispose();
+        return outline;
     }
 
     private void drawSelection(Graphics2D g, Layer layer) {

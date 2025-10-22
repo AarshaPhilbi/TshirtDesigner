@@ -1,10 +1,14 @@
 package com.tshirt.designApp.ui;
 import com.tshirt.designApp.ui.DesignCanvasPage;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.awt.Desktop;
 
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.ArrayList;
 
 public class HomePage extends JFrame {
@@ -116,6 +120,24 @@ public class HomePage extends JFrame {
         section.add(stylesPanel);
 
         return section;
+    }
+    private void openExportedDesign(File file) {
+        try {
+            // Open the file with the system's default image viewer
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(file);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "Cannot open file on this system.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to open file: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel createStyleCard(String styleName, String description, Color accentColor) {
@@ -235,12 +257,11 @@ public class HomePage extends JFrame {
         section.setBackground(new Color(245, 245, 250));
         section.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
-        // Section Title
         JLabel titleLabel = new JLabel("Your Saved Designs");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel subtitleLabel = new JLabel("Continue editing your previous designs");
+        JLabel subtitleLabel = new JLabel("Your exported designs are listed below");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 16));
         subtitleLabel.setForeground(new Color(100, 100, 100));
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -250,30 +271,102 @@ public class HomePage extends JFrame {
         section.add(subtitleLabel);
         section.add(Box.createRigidArea(new Dimension(0, 25)));
 
-        // Saved Designs Grid
         JPanel designsGrid = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
         designsGrid.setBackground(new Color(245, 245, 250));
         designsGrid.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Sample saved designs (TODO: Load from database)
-        designsGrid.add(createSavedDesignCard("My Design 1", "Regular", "2 days ago"));
-        designsGrid.add(createSavedDesignCard("Summer Vibes", "Cropped", "1 week ago"));
-        designsGrid.add(createSavedDesignCard("Cool Quote", "Oversized", "2 weeks ago"));
-
-        // Empty state if no designs
-        if (designsGrid.getComponentCount() == 0) {
-            JLabel emptyLabel = new JLabel("No saved designs yet. Start creating!");
-            emptyLabel.setFont(new Font("Arial", Font.ITALIC, 16));
-            emptyLabel.setForeground(new Color(150, 150, 150));
-            designsGrid.add(emptyLabel);
+        File[] exportedDesigns = getExportedDesigns();
+        if (exportedDesigns != null && exportedDesigns.length > 0) {
+            for (File f : exportedDesigns) {
+                designsGrid.add(createExportedDesignCard(f, designsGrid));
+            }
+        } else {
+            // Add placeholder cards when no designs exist
+            for (int i = 1; i <= 3; i++) {
+                designsGrid.add(createPlaceholderCard(i));
+            }
         }
 
         section.add(designsGrid);
-
         return section;
     }
 
-    private JPanel createSavedDesignCard(String designName, String style, String lastModified) {
+    private JPanel createPlaceholderCard(int number) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setPreferredSize(new Dimension(250, 280));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220), 1, true),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        // Placeholder thumbnail
+        JPanel thumbnail = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Dashed border effect
+                g2d.setColor(new Color(200, 200, 200));
+                Stroke dashed = new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL,
+                        0, new float[]{9}, 0);
+                g2d.setStroke(dashed);
+                g2d.drawRoundRect(10, 10, getWidth()-20, getHeight()-20, 10, 10);
+
+                // Icon or text
+                g2d.setColor(new Color(180, 180, 180));
+                g2d.setFont(new Font("Arial", Font.PLAIN, 48));
+                String text = "+";
+                FontMetrics fm = g2d.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(text)) / 2;
+                int y = (getHeight() + fm.getAscent()) / 2 - 10;
+                g2d.drawString(text, x, y);
+
+                // Subtext
+                g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+                g2d.setColor(new Color(150, 150, 150));
+                String subtext = "No design yet";
+                fm = g2d.getFontMetrics();
+                x = (getWidth() - fm.stringWidth(subtext)) / 2;
+                y = getHeight() - 20;
+                g2d.drawString(subtext, x, y);
+            }
+        };
+        thumbnail.setPreferredSize(new Dimension(230, 150));
+        thumbnail.setBackground(new Color(250, 250, 250));
+
+        // Info Panel
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 5, 5));
+
+        JLabel nameLabel = new JLabel("Design Slot " + number);
+        nameLabel.setFont(new Font("Arial", Font.ITALIC, 14));
+        nameLabel.setForeground(new Color(150, 150, 150));
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel emptyLabel = new JLabel("Start creating to fill this slot!");
+        emptyLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        emptyLabel.setForeground(new Color(180, 180, 180));
+        emptyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        infoPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        infoPanel.add(nameLabel);
+        infoPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        infoPanel.add(emptyLabel);
+        infoPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        card.add(thumbnail, BorderLayout.CENTER);
+        card.add(infoPanel, BorderLayout.SOUTH);
+
+        return card;
+    }
+
+    private JPanel createExportedDesignCard(File file, JPanel parentGrid) {
         JPanel card = new JPanel();
         card.setLayout(new BorderLayout());
         card.setPreferredSize(new Dimension(250, 280));
@@ -283,57 +376,43 @@ public class HomePage extends JFrame {
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
-        // Thumbnail (placeholder for actual design preview)
         JPanel thumbnail = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g;
-                g2d.setColor(new Color(240, 240, 245));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2d.setColor(new Color(99, 94, 59));
-                g2d.setFont(new Font("Arial", Font.BOLD, 16));
-                String text = "Design Preview";
-                FontMetrics fm = g2d.getFontMetrics();
-                int x = (getWidth() - fm.stringWidth(text)) / 2;
-                int y = getHeight() / 2;
-                g2d.drawString(text, x, y);
+                try {
+                    BufferedImage img = ImageIO.read(file);
+                    g.drawImage(img, 0, 0, getWidth(), getHeight(), null);
+                } catch (Exception e) {
+                    g.setColor(Color.LIGHT_GRAY);
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                    g.setColor(Color.BLACK);
+                    g.drawString("Cannot load image", 20, 30);
+                }
             }
         };
         thumbnail.setPreferredSize(new Dimension(230, 150));
 
-        // Info Panel
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setBackground(Color.WHITE);
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 5, 5));
 
-        JLabel nameLabel = new JLabel(designName);
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        JLabel nameLabel = new JLabel(file.getName());
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
         nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel styleLabel = new JLabel("Style: " + style);
-        styleLabel.setFont(new Font("Arial", Font.PLAIN, 13));
-        styleLabel.setForeground(new Color(100, 100, 100));
-        styleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel dateLabel = new JLabel("Modified: " + lastModified);
-        dateLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        dateLabel.setForeground(new Color(120, 120, 120));
-        dateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // Buttons Panel
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         buttonsPanel.setBackground(Color.WHITE);
         buttonsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JButton editButton = new JButton("Edit");
-        editButton.setBackground(new Color(70, 130, 180));
-        editButton.setForeground(Color.WHITE);
-        editButton.setFont(new Font("Arial", Font.BOLD, 12));
-        editButton.setFocusPainted(false);
-        editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        editButton.addActionListener(e -> editDesign(designName));
+        JButton openButton = new JButton("Open");
+        openButton.setBackground(new Color(70, 130, 180));
+        openButton.setForeground(Color.WHITE);
+        openButton.setFont(new Font("Arial", Font.BOLD, 12));
+        openButton.setFocusPainted(false);
+        openButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        openButton.addActionListener(e -> openExportedDesign(file));
 
         JButton deleteButton = new JButton("Delete");
         deleteButton.setBackground(new Color(220, 53, 69));
@@ -341,22 +420,43 @@ public class HomePage extends JFrame {
         deleteButton.setFont(new Font("Arial", Font.BOLD, 12));
         deleteButton.setFocusPainted(false);
         deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        deleteButton.addActionListener(e -> deleteDesign(designName));
+        deleteButton.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Delete design: " + file.getName() + "?",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (confirm == JOptionPane.YES_OPTION) {
+                file.delete();
+                parentGrid.remove(card);
+                parentGrid.revalidate();
+                parentGrid.repaint();
+            }
+        });
 
-        buttonsPanel.add(editButton);
+        buttonsPanel.add(openButton);
         buttonsPanel.add(deleteButton);
 
         infoPanel.add(nameLabel);
         infoPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-        infoPanel.add(styleLabel);
-        infoPanel.add(dateLabel);
-        infoPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         infoPanel.add(buttonsPanel);
 
         card.add(thumbnail, BorderLayout.CENTER);
         card.add(infoPanel, BorderLayout.SOUTH);
 
         return card;
+    }
+
+    private File[] getExportedDesigns() {
+        String appHome = System.getProperty("user.dir");
+        File exportsFolder = new File(appHome, "exports");
+        if (!exportsFolder.exists()) {
+            exportsFolder.mkdir();
+        }
+        return exportsFolder.listFiles((dir, name) -> {
+            String lower = name.toLowerCase();
+            return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg");
+        });
     }
 
     private JPanel createTemplatesSection() {
