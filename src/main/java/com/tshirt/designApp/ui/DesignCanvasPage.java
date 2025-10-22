@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.HashMap;
 import javax.imageio.ImageIO;
 import com.tshirt.designApp.Export.DesignCanvasExport;
+// Add these imports to the top of DesignCanvasPage.java
+import com.tshirt.designApp.UserSession;
+import com.tshirt.designApp.database.DesignDAO;
 
 public class DesignCanvasPage extends JFrame {
     private final TshirtCanvasPanel canvasPanel;
@@ -44,6 +47,50 @@ public class DesignCanvasPage extends JFrame {
 class ToolbarPanel extends JPanel {
     private final TshirtCanvasPanel canvas;
 
+    // Add this method inside the 'ToolbarPanel' class
+    private void handleSave() {
+        int userId;
+        try {
+            // Get user ID from the active session
+            userId = UserSession.getInstance().getCurrentUser().id;
+        } catch (Exception ex) {
+            // Display an error if the user is not logged in (UserSession is null)
+            JOptionPane.showMessageDialog(canvas, "Error: You must be logged in to save.", "Save Failed", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // 1. Get Design Metadata
+        com.tshirt.designApp.Design coreDesign = canvas.getDesignAdapter().getCoreDesign();
+        String style = canvas.getTshirtStyle();
+
+        // Convert Color to Hex string for saving
+        String colorHex = String.format("#%06x", canvas.getTshirtColor().getRGB() & 0xFFFFFF);
+
+        // 2. Call the DAO method
+        boolean success = DesignDAO.saveDesign(
+                userId, coreDesign, style, colorHex
+        );
+
+        if (success) {
+            JOptionPane.showMessageDialog(canvas, "Design saved successfully!", "Save Success", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(canvas, "Failed to save design to database.", "Save Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    private JPanel createSaveControls() {
+        JPanel panel = createStyledPanel();
+
+        // We use a lambda expression to call handleSave()
+        JButton saveBtn = createButton("Save Design", e -> handleSave());
+
+        // Optional: Style the button for prominence
+        saveBtn.setBackground(new Color(255, 165, 0)); // Orange color
+        saveBtn.setForeground(Color.WHITE);
+
+        panel.add(saveBtn);
+        return panel;
+    }
+
     public ToolbarPanel(TshirtCanvasPanel canvas) {
         this.canvas = canvas;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -62,8 +109,14 @@ class ToolbarPanel extends JPanel {
         add(createSection("Shape Tools", createShapeControls()));
         add(Box.createRigidArea(new Dimension(0, 15)));
         add(createSection("Element Controls", createElementControls()));
+        // Add this new private method inside the 'ToolbarPanel' class
+
+        add(createSection("Save Options", createSaveControls()));
+        add(Box.createRigidArea(new Dimension(0, 15)));
         add(Box.createVerticalGlue());
         add(createSection("Export Options", createExportControls()));
+
+
     }
 
     private JPanel createSection(String title, JPanel content) {

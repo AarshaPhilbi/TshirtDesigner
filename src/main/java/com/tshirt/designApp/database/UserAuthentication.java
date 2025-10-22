@@ -24,59 +24,49 @@ public class UserAuthentication {
 
     public static boolean registerUser(String username, String email, String password) {
         String sql = "INSERT INTO users (username, email, password) VALUES (?, ?, ?)";
+        Connection conn = null; // Defined outside try block
 
-        Connection conn = null;
+        System.out.println("DEBUG 1: Starting registration process."); // <-- DEBUG POINT 1
 
         try {
             conn = DatabaseManager.getConnection();
-
-            // CRITICAL FIX: Disable autocommit for manual transaction control
-            conn.setAutoCommit(false);
+            System.out.println("DEBUG 2: Connection secured. AutoCommit forced ON."); // <-- DEBUG POINT 2
+            conn.setAutoCommit(true); // Keep this for stability
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                System.out.println("DEBUG 3: PreparedStatement created."); // <-- DEBUG POINT 3
 
                 pstmt.setString(1, username);
                 pstmt.setString(2, email);
                 pstmt.setString(3, hashPassword(password));
 
                 int rowsAffected = pstmt.executeUpdate();
+                System.out.println("DEBUG 4: ExecuteUpdate completed. Rows affected: " + rowsAffected); // <-- DEBUG POINT 4
 
                 if (rowsAffected > 0) {
-                    conn.commit(); // Now this will work
+                    // If it reaches here, it works!
                     System.out.println("User registered successfully: " + username);
                     return true;
                 } else {
-                    conn.rollback();
+                    System.err.println("ERROR: No rows affected by INSERT."); // <-- DEBUG POINT 5
                     return false;
                 }
             }
 
         } catch (SQLException e) {
-            // Handle Rollback on failure
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                    System.err.println("Transaction rolled back due to error.");
-                } catch (SQLException rollbackEx) {
-                    System.err.println("Rollback failed: " + rollbackEx.getMessage());
-                }
-            }
-
-            if (e.getMessage().contains("UNIQUE") || e.getMessage().contains("constraint")) {
-                System.err.println("Registration failed: Username or email already exists.");
-            } else {
-                System.err.println("Error registering user: " + e.getMessage());
-                e.printStackTrace();
-            }
+            System.err.println("DEBUG CATCH: Caught SQL Exception!");
+            e.printStackTrace(); // Must ensure this prints
             return false;
-
+        } catch (Exception e) {
+            System.err.println("DEBUG CATCH: Caught GENERIC Exception!");
+            e.printStackTrace(); // Catch everything else!
+            return false;
         } finally {
             if (conn != null) {
                 try {
-                    conn.setAutoCommit(true); // Restore autocommit
                     conn.close();
                 } catch (SQLException closeEx) {
-                    System.err.println("Error closing connection: " + closeEx.getMessage());
+                    System.err.println("Error closing connection.");
                 }
             }
         }
